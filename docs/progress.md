@@ -182,3 +182,19 @@
 
 Claude provider и RAG подключены и проверены реальными запросами. Внешние API
 автоматизаций пока не подключены.
+
+## Netlify production deploy
+
+- GitHub `main` published to Netlify project `fixflow-ai-661`.
+- Root directory is the repository root; build command is `npm run build`.
+- Manual Netlify Next runtime is configured with `@netlify/plugin-nextjs` and
+  `publish = ".next"` because the API-created site did not deploy server
+  functions with automatic detection alone.
+- GitHub push webhook is active and the deploy for commit `1bb2998` was started
+  automatically.
+- Production deploy includes Netlify server functions and `plugin_state=success`.
+- Verified production routes on `https://fixflow-ai-661.netlify.app`:
+  `/`, `/chat`, `/request`, `/demo/crm`, `/demo/knowledge`, `/demo/ai-runs`,
+  `/demo/automations`, `/api/health/db`.
+- Production `/api/health/db` returned HTTP 200 with
+  `{"status":"ok","database":"connected"}`.
