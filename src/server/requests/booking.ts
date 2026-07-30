@@ -1,5 +1,6 @@
 import "server-only";
 
+import { randomUUID } from "node:crypto";
 import { and, asc, eq, gt, lte, sql } from "drizzle-orm";
 
 import type { CrmCategory } from "../../lib/crm/constants";
@@ -8,8 +9,10 @@ import {
   availabilitySlots,
   bookings,
   customers,
+  integrationEvents,
   leads,
 } from "../db/schema";
+import { deliverIntegrationEvent } from "../integrations/outbox";
 import type { BookingStore } from "./booking-service";
 
 export {
@@ -56,10 +59,16 @@ export async function listAvailableSlots(
 
 export const databaseBookingStore: BookingStore = {
   async claimSlotAtomic(input, bookingId, now) {
+    const eventId = randomUUID();
+
     try {
       const result = await db.execute(sql`
         with candidate_lead as (
-          select lead.id, lead.category
+          select
+            lead.id,
+            lead.public_number,
+            lead.category,
+            lead.service_type
           from ${leads} as lead
           inner join ${customers} as customer
             on customer.id = lead.customer_id
@@ -109,24 +118,64 @@ export const databaseBookingStore: BookingStore = {
           where lead.id = ${input.leadId}
             and exists (select 1 from created_booking)
           returning lead.id
+        ),
+        created_event as (
+          insert into ${integrationEvents} (
+            id,
+            event_type,
+            entity_type,
+            entity_id,
+            payload,
+            delivery_status,
+            created_at
+          )
+          select
+            ${eventId},
+            'booking.created',
+            'lead',
+            candidate_lead.id,
+            jsonb_build_object(
+              'bookingId', created_booking.id,
+              'leadId', candidate_lead.id,
+              'publicNumber', candidate_lead.public_number,
+              'category', candidate_lead.category,
+              'serviceType', candidate_lead.service_type,
+              'startsAt', created_booking.starts_at,
+              'endsAt', created_booking.ends_at,
+              'telegramMessage',
+                '📅 Новое бронирование для ' || candidate_lead.public_number
+                || E'\nКатегория: ' || candidate_lead.category
+                || E'\nУслуга: ' || candidate_lead.service_type
+                || E'\nНачало (UTC): ' || created_booking.starts_at::text
+            ),
+            'pending',
+            ${now}
+          from created_booking
+          inner join candidate_lead on true
+          returning id
         )
         select
           created_booking.id as booking_id,
           created_booking.starts_at,
-          created_booking.ends_at
+          created_booking.ends_at,
+          created_event.id as event_id
         from created_booking
         inner join updated_lead on true
+        inner join created_event on true
       `);
 
       const [row] = getResultRows<{
         booking_id: string;
         starts_at: Date | string;
         ends_at: Date | string;
+        event_id: string;
       }>(result);
 
       if (!row) {
         return null;
       }
+
+      await deliverIntegrationEvent(row.event_id);
 
       return {
         bookingId: row.booking_id,

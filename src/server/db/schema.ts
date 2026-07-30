@@ -563,6 +563,11 @@ export const integrationEvents = pgTable(
       table.entityType,
       table.entityId,
     ),
+    uniqueIndex("integration_events_type_entity_unique").on(
+      table.eventType,
+      table.entityType,
+      table.entityId,
+    ),
     check(
       "integration_events_http_status_valid",
       sql`${table.httpStatus} is null or (${table.httpStatus} >= 100 and ${table.httpStatus} <= 599)`,
@@ -607,6 +612,12 @@ export const automationLogs = pgTable(
     index("automation_logs_status_created_at_idx").on(
       table.status,
       table.createdAt,
+    ),
+    uniqueIndex("automation_logs_callback_unique").on(
+      table.integrationEventId,
+      table.platform,
+      table.workflowName,
+      table.action,
     ),
   ],
 );

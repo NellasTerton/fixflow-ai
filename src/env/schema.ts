@@ -22,3 +22,12 @@ export const llmEnvSchema = z.object({
   LLM_API_KEY: z.string().trim().min(1, "LLM API key is required"),
   LLM_MODEL: z.string().trim().min(1, "LLM model is required"),
 });
+
+export const automationEnvSchema = z.object({
+  AUTOMATION_WEBHOOK_URL: z.url(
+    "Automation webhook URL must be a valid URL",
+  ),
+  AUTOMATION_WEBHOOK_SECRET: z.string().trim().min(16),
+  AUTOMATION_CALLBACK_SECRET: z.string().trim().min(16),
+  NEXT_PUBLIC_APP_URL: z.url("Application URL must be a valid URL"),
+});

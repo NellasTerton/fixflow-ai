@@ -72,6 +72,7 @@ export interface PublicAutomationLog {
   action: string;
   status: "started" | "success" | "failed";
   externalRunId: string | null;
+  details: Record<string, string | number | boolean | null>;
   createdAt: string;
 }
 

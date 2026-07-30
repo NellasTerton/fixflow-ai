@@ -1,0 +1,2 @@
+CREATE UNIQUE INDEX "automation_logs_callback_unique" ON "automation_logs" USING btree ("integration_event_id","platform","workflow_name","action");--> statement-breakpoint
+CREATE UNIQUE INDEX "integration_events_type_entity_unique" ON "integration_events" USING btree ("event_type","entity_type","entity_id");

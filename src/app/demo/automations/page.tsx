@@ -93,6 +93,11 @@ export default async function AutomationsPage() {
                       <p className="mt-1 text-xs text-[#7a878a]">
                         {log.platform} · {log.action}
                       </p>
+                      {log.externalRunId ? (
+                        <p className="mt-1 text-xs text-[#849093]">
+                          Run: {log.externalRunId}
+                        </p>
+                      ) : null}
                     </div>
                     <DataBadge tone={log.status === "success" ? "green" : "amber"}>
                       {log.status}
@@ -102,6 +107,13 @@ export default async function AutomationsPage() {
                     {log.eventType ?? "event"} ·{" "}
                     {formatDateTime(log.createdAt)}
                   </p>
+                  {Object.keys(log.details).length > 0 ? (
+                    <p className="mt-2 text-xs text-[#657477]">
+                      {Object.entries(log.details)
+                        .map(([key, value]) => `${key}: ${String(value)}`)
+                        .join(" · ")}
+                    </p>
+                  ) : null}
                 </article>
               ))}
             </div>

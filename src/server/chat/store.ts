@@ -8,16 +8,23 @@ import type {
   ChatStep,
 } from "../../lib/chat/contracts";
 import type { CrmCategory } from "../../lib/crm/constants";
+import {
+  createAddressSummary,
+  maskPhone,
+  redactPublicText,
+} from "../../lib/crm/presentation";
 import { db } from "../db";
 import {
   availabilitySlots,
   bookings,
   conversations,
   customers,
+  integrationEvents,
   leads,
   messages,
   services,
 } from "../db/schema";
+import { deliverIntegrationEvent } from "../integrations/outbox";
 import type {
   ChatSlot,
   ChatWorkflowStore,
@@ -26,17 +33,16 @@ import type {
 
 export const databaseChatStore: ChatWorkflowStore = {
   async startConversation(input) {
-    await db.batch([
-      db.insert(conversations).values({
-        id: input.conversationId,
-        leadId: null,
-        currentStep: input.currentStep,
-        collectedData: { ...input.data },
-        status: input.status ?? "active",
-        createdAt: input.now,
-        updatedAt: input.now,
-      }),
-      db.insert(messages).values([
+    const conversationQuery = db.insert(conversations).values({
+      id: input.conversationId,
+      leadId: null,
+      currentStep: input.currentStep,
+      collectedData: { ...input.data },
+      status: input.status ?? "active",
+      createdAt: input.now,
+      updatedAt: input.now,
+    });
+    const messagesQuery = db.insert(messages).values([
         {
           id: randomUUID(),
           conversationId: input.conversationId,
@@ -53,8 +59,37 @@ export const databaseChatStore: ChatWorkflowStore = {
           metadata: { action: input.action, deterministic: true },
           createdAt: new Date(input.now.getTime() + 1),
         },
-      ]),
-    ]);
+      ]);
+
+    if (input.status === "human_required") {
+      const eventId = randomUUID();
+
+      await db.batch([
+        conversationQuery,
+        messagesQuery,
+        db.insert(integrationEvents).values({
+          id: eventId,
+          eventType: "handoff.required",
+          entityType: "conversation",
+          entityId: input.conversationId,
+          payload: {
+            conversationId: input.conversationId,
+            reason: "AI requested human assistance",
+            telegramMessage: [
+              "🚨 Срочно: FixFlow AI передаёт разговор человеку",
+              `Conversation: ${input.conversationId}`,
+              "Причина: недостаточно подтверждённых данных или источников.",
+            ].join("\n"),
+          },
+          deliveryStatus: "pending",
+          createdAt: input.now,
+        }),
+      ]);
+      await deliverIntegrationEvent(eventId);
+      return;
+    }
+
+    await db.batch([conversationQuery, messagesQuery]);
   },
 
   async loadConversation(id) {
@@ -101,6 +136,7 @@ export const databaseChatStore: ChatWorkflowStore = {
 
   async saveTurn(input) {
     const status = input.status ?? "active";
+    const eventId = randomUUID();
     const result = await db.execute(sql`
       with locked_conversation as (
         select id, lead_id
@@ -168,11 +204,65 @@ export const databaseChatStore: ChatWorkflowStore = {
           ${new Date(input.now.getTime() + 1)}
         from updated_conversation
         returning id
+      ),
+      created_handoff_event as (
+        insert into ${integrationEvents} (
+          id,
+          event_type,
+          entity_type,
+          entity_id,
+          payload,
+          delivery_status,
+          created_at
+        )
+        select
+          ${eventId},
+          'handoff.required',
+          case
+            when updated_conversation.lead_id is null then 'conversation'
+            else 'lead'
+          end,
+          coalesce(
+            updated_conversation.lead_id,
+            updated_conversation.id
+          ),
+          jsonb_build_object(
+            'conversationId', updated_conversation.id,
+            'leadId', updated_conversation.lead_id,
+            'reason', 'AI requested human assistance',
+            'telegramMessage',
+              '🚨 Срочно: FixFlow AI передаёт разговор человеку'
+              || E'\nConversation: ' || updated_conversation.id::text
+              || case
+                when updated_conversation.lead_id is null then ''
+                else E'\nLead ID: ' || updated_conversation.lead_id::text
+              end
+          ),
+          'pending',
+          ${input.now}
+        from updated_conversation
+        where ${status} = 'human_required'
+        on conflict (
+          event_type,
+          entity_type,
+          entity_id
+        ) do nothing
+        returning id
       )
-      select id from updated_conversation
+      select
+        updated_conversation.id,
+        created_handoff_event.id as event_id
+      from updated_conversation
+      left join created_handoff_event on true
     `);
 
-    return getResultRows(result).length === 1;
+    const [row] = getResultRows<{ id: string; event_id: string | null }>(result);
+
+    if (row?.event_id) {
+      await deliverIntegrationEvent(row.event_id);
+    }
+
+    return Boolean(row);
   },
 
   async createLeadTurn(input) {
@@ -180,6 +270,8 @@ export const databaseChatStore: ChatWorkflowStore = {
     const leadId = randomUUID();
     const customerMessageId = randomUUID();
     const assistantMessageId = randomUUID();
+    const leadEventId = randomUUID();
+    const handoffEventId = randomUUID();
     const expiresAt = new Date(input.now.getTime() + 48 * 60 * 60 * 1000);
     const leadStatus = input.hasSlots
       ? "waiting_booking"
@@ -345,20 +437,107 @@ export const databaseChatStore: ChatWorkflowStore = {
         from updated_conversation
         inner join created_lead on true
         returning content
+      ),
+      created_lead_event as (
+        insert into ${integrationEvents} (
+          id,
+          event_type,
+          entity_type,
+          entity_id,
+          payload,
+          delivery_status,
+          created_at
+        )
+        select
+          ${leadEventId},
+          'lead.created',
+          'lead',
+          created_lead.id,
+          jsonb_build_object(
+            'publicNumber', created_lead.public_number,
+            'category', ${input.data.category},
+            'serviceType', selected_service.name,
+            'priority', 'normal',
+            'source', 'ai_chat',
+            'customerName', ${withDemoPrefix(input.data.demoName)},
+            'maskedPhone', ${maskPhone(input.data.phone)},
+            'addressSummary',
+              ${createAddressSummary(withDemoPrefix(input.data.area))},
+            'problemDescription',
+              ${redactPublicText(
+                withDemoPrefix(input.data.problemDescription),
+                input.data.phone,
+                withDemoPrefix(input.data.area),
+              )},
+            'telegramMessage',
+              '🆕 Новая chat-заявка ' || created_lead.public_number
+              || E'\nКатегория: ' || ${input.data.category}
+              || E'\nУслуга: ' || selected_service.name
+              || E'\nКлиент: ' || ${withDemoPrefix(input.data.demoName)}
+              || E'\nТелефон: ' || ${maskPhone(input.data.phone)}
+          ),
+          'pending',
+          ${input.now}
+        from created_lead
+        inner join selected_service on true
+        returning id
+      ),
+      created_handoff_event as (
+        insert into ${integrationEvents} (
+          id,
+          event_type,
+          entity_type,
+          entity_id,
+          payload,
+          delivery_status,
+          created_at
+        )
+        select
+          ${handoffEventId},
+          'handoff.required',
+          'lead',
+          created_lead.id,
+          jsonb_build_object(
+            'leadId', created_lead.id,
+            'publicNumber', created_lead.public_number,
+            'reason', 'No matching availability slots',
+            'telegramMessage',
+              '🚨 Срочно: для заявки ' || created_lead.public_number
+              || ' нет свободных слотов. Нужен человек.'
+          ),
+          'pending',
+          ${input.now}
+        from created_lead
+        where ${input.hasSlots} = false
+        returning id
       )
       select
         created_lead.id as lead_id,
         created_lead.public_number,
-        assistant_message.content as assistant_message
+        assistant_message.content as assistant_message,
+        created_lead_event.id as lead_event_id,
+        created_handoff_event.id as handoff_event_id
       from created_lead
       inner join assistant_message on true
+      inner join created_lead_event on true
+      left join created_handoff_event on true
     `);
 
     const [row] = getResultRows<{
       lead_id: string;
       public_number: string;
       assistant_message: string;
+      lead_event_id: string;
+      handoff_event_id: string | null;
     }>(result);
+
+    if (row) {
+      await deliverIntegrationEvent(row.lead_event_id);
+
+      if (row.handoff_event_id) {
+        await deliverIntegrationEvent(row.handoff_event_id);
+      }
+    }
 
     return row
       ? {
@@ -371,6 +550,7 @@ export const databaseChatStore: ChatWorkflowStore = {
 
   async createBookingTurn(input) {
     const bookingId = randomUUID();
+    const eventId = randomUUID();
     const result = await db.execute(sql`
       with locked_conversation as (
         select conversation.id, conversation.lead_id, lead.category
@@ -479,13 +659,57 @@ export const databaseChatStore: ChatWorkflowStore = {
           ${new Date(input.now.getTime() + 1)}
         from updated_conversation
         returning id
+      ),
+      created_event as (
+        insert into ${integrationEvents} (
+          id,
+          event_type,
+          entity_type,
+          entity_id,
+          payload,
+          delivery_status,
+          created_at
+        )
+        select
+          ${eventId},
+          'booking.created',
+          'lead',
+          created_booking.lead_id,
+          jsonb_build_object(
+            'bookingId', created_booking.id,
+            'leadId', created_booking.lead_id,
+            'publicNumber', ${input.data.publicNumber},
+            'category', ${input.data.category},
+            'startsAt', claimed_slot.starts_at,
+            'endsAt', claimed_slot.ends_at,
+            'telegramMessage',
+              '📅 Новое бронирование для ' || ${input.data.publicNumber}
+              || E'\nКатегория: ' || ${input.data.category}
+              || E'\nНачало (UTC): ' || claimed_slot.starts_at::text
+          ),
+          'pending',
+          ${input.now}
+        from created_booking
+        inner join claimed_slot on true
+        returning id
       )
-      select created_booking.id as booking_id
+      select
+        created_booking.id as booking_id,
+        created_event.id as event_id
       from created_booking
       inner join updated_conversation on true
+      inner join created_event on true
     `);
 
-    const [row] = getResultRows<{ booking_id: string }>(result);
+    const [row] = getResultRows<{
+      booking_id: string;
+      event_id: string;
+    }>(result);
+
+    if (row) {
+      await deliverIntegrationEvent(row.event_id);
+    }
+
     return row ? { bookingId: row.booking_id } : null;
   },
 };

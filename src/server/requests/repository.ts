@@ -7,15 +7,22 @@ import type {
   CrmCategory,
   CrmLeadStatus,
 } from "../../lib/crm/constants";
+import {
+  createAddressSummary,
+  maskPhone,
+  redactPublicText,
+} from "../../lib/crm/presentation";
 import type { PublicRequestInput } from "../../lib/request/schema";
 import { db } from "../db";
 import {
   customers,
   formRateLimits,
   formSubmissions,
+  integrationEvents,
   leads,
   services,
 } from "../db/schema";
+import { deliverIntegrationEvent } from "../integrations/outbox";
 
 const RATE_LIMIT_MAX_REQUESTS = 5;
 
@@ -102,9 +109,16 @@ export async function createPublicRequest(
   const customerId = randomUUID();
   const leadId = randomUUID();
   const submissionId = randomUUID();
+  const eventId = randomUUID();
   const expiresAt = new Date(now.getTime() + 48 * 60 * 60 * 1000);
   const displayName = withDemoPrefix(input.demoName);
   const address = withDemoPrefix(input.area);
+  const publicNumber = await createPublicNumber();
+  const problemDescription = redactPublicText(
+    withDemoPrefix(input.problemDescription),
+    input.phone,
+    address,
+  );
 
   try {
     const [, createdLeads] = await db.batch([
@@ -127,7 +141,7 @@ export async function createPublicRequest(
         .insert(leads)
         .values({
           id: leadId,
-          publicNumber: sql<string>`'FF-' || nextval('lead_public_number_sequence')::text`,
+          publicNumber,
           customerId,
           category: input.category,
           serviceType: service.name,
@@ -156,6 +170,34 @@ export async function createPublicRequest(
         expiresAt,
         createdAt: now,
       }),
+      db.insert(integrationEvents).values({
+        id: eventId,
+        eventType: "lead.created",
+        entityType: "lead",
+        entityId: leadId,
+        payload: {
+          publicNumber,
+          category: input.category,
+          serviceType: service.name,
+          priority: "normal",
+          source: "website_form",
+          customerName: displayName,
+          maskedPhone: maskPhone(input.phone),
+          addressSummary: createAddressSummary(address),
+          problemDescription,
+          telegramMessage: [
+            `🆕 Новая demo-заявка ${publicNumber}`,
+            `Категория: ${input.category}`,
+            `Услуга: ${service.name}`,
+            `Клиент: ${displayName}`,
+            `Телефон: ${maskPhone(input.phone)}`,
+            `Район: ${createAddressSummary(address)}`,
+            `Проблема: ${problemDescription}`,
+          ].join("\n"),
+        },
+        deliveryStatus: "pending",
+        createdAt: now,
+      }),
     ]);
 
     const createdLead = createdLeads[0];
@@ -163,6 +205,8 @@ export async function createPublicRequest(
     if (!createdLead) {
       throw new Error("Lead transaction returned no row");
     }
+
+    await deliverIntegrationEvent(eventId);
 
     return {
       leadId: createdLead.id,
@@ -179,6 +223,19 @@ export async function createPublicRequest(
 
     throw error;
   }
+}
+
+async function createPublicNumber() {
+  const result = await db.execute(sql`
+    select 'FF-' || nextval('lead_public_number_sequence')::text as public_number
+  `);
+  const [row] = getResultRows<{ public_number: string }>(result);
+
+  if (!row) {
+    throw new Error("Lead number sequence returned no row");
+  }
+
+  return row.public_number;
 }
 
 async function findExistingSubmission(

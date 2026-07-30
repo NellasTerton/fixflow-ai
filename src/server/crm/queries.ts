@@ -6,6 +6,7 @@ import {
   desc,
   eq,
   ilike,
+  isNotNull,
   isNull,
   or,
   type SQL,
@@ -228,6 +229,7 @@ export async function getPublicLeadDetail(
           action: automationLogs.action,
           status: automationLogs.status,
           externalRunId: automationLogs.externalRunId,
+          details: automationLogs.details,
           createdAt: automationLogs.createdAt,
         })
         .from(automationLogs)
@@ -419,15 +421,22 @@ export async function listPublicIntegrationEvents(): Promise<
       createdAt: integrationEvents.createdAt,
     })
     .from(integrationEvents)
-    .innerJoin(
+    .leftJoin(
       leads,
       and(
         eq(integrationEvents.entityType, "lead"),
         eq(integrationEvents.entityId, leads.id),
       ),
     )
-    .innerJoin(customers, eq(leads.customerId, customers.id))
-    .where(eq(customers.isDemo, true))
+    .leftJoin(customers, eq(leads.customerId, customers.id))
+    .leftJoin(
+      conversations,
+      and(
+        eq(integrationEvents.entityType, "conversation"),
+        eq(integrationEvents.entityId, conversations.id),
+      ),
+    )
+    .where(or(eq(customers.isDemo, true), isNotNull(conversations.id)))
     .orderBy(desc(integrationEvents.createdAt));
 
   return rows.map(toPublicIntegrationEvent);
@@ -445,6 +454,7 @@ export async function listPublicAutomationLogs(): Promise<
       action: automationLogs.action,
       status: automationLogs.status,
       externalRunId: automationLogs.externalRunId,
+      details: automationLogs.details,
       createdAt: automationLogs.createdAt,
     })
     .from(automationLogs)
@@ -452,15 +462,22 @@ export async function listPublicAutomationLogs(): Promise<
       integrationEvents,
       eq(automationLogs.integrationEventId, integrationEvents.id),
     )
-    .innerJoin(
+    .leftJoin(
       leads,
       and(
         eq(integrationEvents.entityType, "lead"),
         eq(integrationEvents.entityId, leads.id),
       ),
     )
-    .innerJoin(customers, eq(leads.customerId, customers.id))
-    .where(eq(customers.isDemo, true))
+    .leftJoin(customers, eq(leads.customerId, customers.id))
+    .leftJoin(
+      conversations,
+      and(
+        eq(integrationEvents.entityType, "conversation"),
+        eq(integrationEvents.entityId, conversations.id),
+      ),
+    )
+    .where(or(eq(customers.isDemo, true), isNotNull(conversations.id)))
     .orderBy(desc(automationLogs.createdAt));
 
   return rows.map(toPublicAutomationLog);
@@ -492,6 +509,7 @@ function toPublicAutomationLog(row: {
   action: string;
   status: PublicAutomationLog["status"];
   externalRunId: string | null;
+  details: Record<string, unknown>;
   createdAt: Date;
 }): PublicAutomationLog {
   return {
@@ -502,6 +520,34 @@ function toPublicAutomationLog(row: {
     action: row.action,
     status: row.status,
     externalRunId: row.externalRunId,
+    details: sanitizeAutomationDetails(row.details),
     createdAt: row.createdAt.toISOString(),
   };
+}
+
+function sanitizeAutomationDetails(
+  details: Record<string, unknown>,
+): PublicAutomationLog["details"] {
+  const allowedKeys = new Set([
+    "telegramStatus",
+    "route",
+    "messageId",
+    "delivery",
+  ]);
+
+  return Object.fromEntries(
+    Object.entries(details).flatMap(([key, value]) => {
+      if (
+        !allowedKeys.has(key) ||
+        (typeof value !== "string" &&
+          typeof value !== "number" &&
+          typeof value !== "boolean" &&
+          value !== null)
+      ) {
+        return [];
+      }
+
+      return [[key, value]];
+    }),
+  );
 }

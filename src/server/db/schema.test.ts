@@ -127,7 +127,15 @@ describe("FixFlow database schema", () => {
   });
 
   it("protects identifiers and one-to-one booking assignments with unique indexes", () => {
-    const uniqueIndexNames = [services, customers, leads, bookings, documents]
+    const uniqueIndexNames = [
+      services,
+      customers,
+      leads,
+      bookings,
+      documents,
+      integrationEvents,
+      automationLogs,
+    ]
       .flatMap((table) => getTableConfig(table).indexes)
       .filter((item) => item.config.unique)
       .map((item) => item.config.name);
@@ -140,6 +148,8 @@ describe("FixFlow database schema", () => {
         "bookings_lead_id_unique",
         "bookings_slot_id_unique",
         "documents_category_title_unique",
+        "integration_events_type_entity_unique",
+        "automation_logs_callback_unique",
       ]),
     );
   });
