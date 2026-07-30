@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1785351262094,
+      "tag": "0000_magical_groot",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1785355373508,
+      "tag": "0001_fixflow_data_model",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785356079705,
+      "tag": "0002_demo_seed_markers",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1785365463479,
+      "tag": "0003_public_request_flow",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1785413882036,
+      "tag": "0004_powerful_cobalt_man",
+      "breakpoints": true
+    }
+  ]
+}
