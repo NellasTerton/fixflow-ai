@@ -1,14 +1,73 @@
 import {
   AirVent,
   ArrowRight,
+  BookOpenText,
   Bot,
   Droplets,
+  KanbanSquare,
+  Radio,
   Refrigerator,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 
+import { CopyExample } from "@/components/home/copy-example";
 import { serviceCategories, workflowStages } from "@/lib/demo";
+
+const evaluationSteps = [
+  {
+    title: "Опишите проблему в demo-чате",
+    description:
+      "AI определит направление и предложит услугу по базе знаний. Пример сообщения можно скопировать одним кликом.",
+    example: "Не работает стиральная машина, вода не сливается после стирки",
+  },
+  {
+    title: "Ответьте на пару вопросов",
+    description:
+      "Имя, demo-телефон и район — сервер принимает только заведомо демонстрационные значения.",
+    example: "+380 00 000 1042",
+  },
+  {
+    title: "Выберите время выезда",
+    description:
+      "Дата и слот бронируются атомарно; заявка сразу получает номер вида FF-1042.",
+    example: null,
+  },
+  {
+    title: "Посмотрите результат в CRM",
+    description:
+      "В карточке заявки — раздел «Почему AI так ответил?» с источниками RAG, а в /demo/automations — webhook в Make и Telegram.",
+    example: null,
+  },
+] as const;
+
+const exploreLinks = [
+  {
+    href: "/demo/crm",
+    icon: KanbanSquare,
+    title: "Публичная CRM",
+    description: "Read-only Kanban по восьми статусам, фильтры и поиск.",
+  },
+  {
+    href: "/demo/ai-runs",
+    icon: Sparkles,
+    title: "AI runs",
+    description: "Каждый вызов LLM: вход, confidence, найденные RAG-чанки.",
+  },
+  {
+    href: "/demo/automations",
+    icon: Radio,
+    title: "Автоматизации",
+    description: "Webhook-события и callback от сценариев Make.",
+  },
+  {
+    href: "/demo/knowledge",
+    icon: BookOpenText,
+    title: "База знаний",
+    description: "Demo-документы, из которых AI берёт цены и условия.",
+  },
+] as const;
 
 const serviceIcons = {
   appliance: Refrigerator,
@@ -105,6 +164,60 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="border-b border-[#102328]/8 bg-white px-6 py-16 lg:px-8 lg:py-20">
+        <div className="mx-auto max-w-6xl">
+          <div className="max-w-2xl">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#477233]">
+              Как оценить продукт за 3 минуты
+            </p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-[#102328] sm:text-4xl">
+              Пройдите основной сценарий сами
+            </h2>
+            <p className="mt-4 text-pretty text-base leading-7 text-[#526166]">
+              Ниже — четыре шага от первого сообщения в чате до заявки в
+              публичной CRM. Примеры можно скопировать одним кликом: сервер
+              принимает только заведомо демонстрационные данные.
+            </p>
+          </div>
+
+          <ol className="mt-10 grid gap-4 lg:grid-cols-2">
+            {evaluationSteps.map((step, index) => (
+              <li
+                key={step.title}
+                className="rounded-2xl border border-[#102328]/10 bg-[#f7f8f3] p-6"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#102328] text-sm font-semibold text-[#bbf451]">
+                    {index + 1}
+                  </span>
+                  <h3 className="text-base font-semibold text-[#102328]">
+                    {step.title}
+                  </h3>
+                </div>
+                <p className="mt-3 text-sm leading-6 text-[#526166]">
+                  {step.description}
+                </p>
+                {step.example ? (
+                  <div className="mt-4">
+                    <CopyExample text={step.example} />
+                  </div>
+                ) : null}
+              </li>
+            ))}
+          </ol>
+
+          <div className="mt-8 flex flex-wrap items-center gap-4">
+            <Link
+              href="/chat"
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#102328] px-5 text-sm font-semibold text-white transition hover:bg-[#1d363c]"
+            >
+              Начать с demo-чата
+              <ArrowRight className="size-4" aria-hidden="true" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
       <section className="bg-[#f3f4ee] px-6 py-16 lg:px-8 lg:py-20">
         <div className="mx-auto max-w-6xl">
           <div className="max-w-2xl">
@@ -141,6 +254,47 @@ export default function Home() {
             Обычная demo-форма создаёт заявку в Neon, позволяет выбрать
             свободное время и сразу показывает результат в публичной CRM.
           </p>
+        </div>
+      </section>
+
+      <section className="border-t border-[#102328]/8 bg-white px-6 py-16 lg:px-8 lg:py-20">
+        <div className="mx-auto max-w-6xl">
+          <div className="max-w-2xl">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#477233]">
+              Без чата
+            </p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-[#102328] sm:text-4xl">
+              Заглянуть внутрь напрямую
+            </h2>
+            <p className="mt-4 text-pretty text-base leading-7 text-[#526166]">
+              Все разделы CRM публичны и доступны без входа в систему —
+              открывайте их сразу, если хотите оценить только код и данные.
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {exploreLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="group rounded-2xl border border-[#102328]/10 bg-[#f7f8f3] p-6 transition hover:border-[#477233]/30 hover:bg-[#eef4e9]"
+              >
+                <div className="flex size-11 items-center justify-center rounded-xl bg-[#e8f5ce] text-[#315b2d]">
+                  <link.icon className="size-5" aria-hidden="true" />
+                </div>
+                <h3 className="mt-5 flex items-center gap-1.5 text-base font-semibold text-[#102328]">
+                  {link.title}
+                  <ArrowRight
+                    className="size-4 -translate-x-1 text-[#477233] opacity-0 transition group-hover:translate-x-0 group-hover:opacity-100"
+                    aria-hidden="true"
+                  />
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-[#526166]">
+                  {link.description}
+                </p>
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
     </main>
