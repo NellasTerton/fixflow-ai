@@ -29,13 +29,23 @@ export async function POST(request: Request) {
     return NextResponse.json(result, {
       headers: { "Cache-Control": "no-store" },
     });
-  } catch {
-    console.error("Deterministic chat message failed");
+  } catch (error) {
+    // Only the database error code is logged: the failing statement carries
+    // demo phone numbers and addresses that must stay out of logs.
+    console.error("Deterministic chat message failed", safeErrorCode(error));
     return NextResponse.json(
       { error: "Не удалось продолжить чат. Попробуйте ещё раз." },
       { status: 503 },
     );
   }
+}
+
+function safeErrorCode(error: unknown) {
+  if (error && typeof error === "object" && "code" in error) {
+    return String(error.code);
+  }
+
+  return "unknown";
 }
 
 async function readJson(request: Request) {

@@ -455,26 +455,26 @@ export const databaseChatStore: ChatWorkflowStore = {
           created_lead.id,
           jsonb_build_object(
             'publicNumber', created_lead.public_number,
-            'category', ${input.data.category},
+            'category', ${input.data.category}::text,
             'serviceType', selected_service.name,
             'priority', 'normal',
             'source', 'ai_chat',
-            'customerName', ${withDemoPrefix(input.data.demoName)},
-            'maskedPhone', ${maskPhone(input.data.phone)},
+            'customerName', ${withDemoPrefix(input.data.demoName)}::text,
+            'maskedPhone', ${maskPhone(input.data.phone)}::text,
             'addressSummary',
-              ${createAddressSummary(withDemoPrefix(input.data.area))},
+              ${createAddressSummary(withDemoPrefix(input.data.area))}::text,
             'problemDescription',
               ${redactPublicText(
                 withDemoPrefix(input.data.problemDescription),
                 input.data.phone,
                 withDemoPrefix(input.data.area),
-              )},
+              )}::text,
             'telegramMessage',
               '🆕 Новая chat-заявка ' || created_lead.public_number
-              || E'\nКатегория: ' || ${input.data.category}
+              || E'\nКатегория: ' || ${input.data.category}::text
               || E'\nУслуга: ' || selected_service.name
-              || E'\nКлиент: ' || ${withDemoPrefix(input.data.demoName)}
-              || E'\nТелефон: ' || ${maskPhone(input.data.phone)}
+              || E'\nКлиент: ' || ${withDemoPrefix(input.data.demoName)}::text
+              || E'\nТелефон: ' || ${maskPhone(input.data.phone)}::text
           ),
           'pending',
           ${input.now}
@@ -678,13 +678,13 @@ export const databaseChatStore: ChatWorkflowStore = {
           jsonb_build_object(
             'bookingId', created_booking.id,
             'leadId', created_booking.lead_id,
-            'publicNumber', ${input.data.publicNumber},
-            'category', ${input.data.category},
+            'publicNumber', ${input.data.publicNumber}::text,
+            'category', ${input.data.category}::text,
             'startsAt', claimed_slot.starts_at,
             'endsAt', claimed_slot.ends_at,
             'telegramMessage',
-              '📅 Новое бронирование для ' || ${input.data.publicNumber}
-              || E'\nКатегория: ' || ${input.data.category}
+              '📅 Новое бронирование для ' || ${input.data.publicNumber}::text
+              || E'\nКатегория: ' || ${input.data.category}::text
               || E'\nНачало (UTC): ' || claimed_slot.starts_at::text
           ),
           'pending',
