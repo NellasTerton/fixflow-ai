@@ -10,9 +10,10 @@ changing framework-specific code, read the relevant guide in
 
 ## Project
 
-FixFlow AI is a public portfolio demo: an AI dispatcher and read-only CRM for a
-fictional field-service company. Never add real customer data to the repository,
-fixtures, screenshots, or logs. Mask demo phone numbers and addresses.
+FixFlow AI is an AI dispatcher and operations platform for field-service
+companies, shown through a public test workspace with fictional data. Never
+add real customer data to the repository, fixtures, screenshots, or logs.
+Mask demo phone numbers and addresses.
 
 ## Commands
 
@@ -34,10 +35,12 @@ fixtures, screenshots, or logs. Mask demo phone numbers and addresses.
 
 ## Architecture boundaries
 
-- `/demo/crm` is public and read-only; employee authentication is out of scope.
+- `/workspace/leads` is public and read-only; employee authentication is out
+  of scope.
 - Next.js may emit webhook events, but must not send Telegram messages or run
   cron jobs, timers, or delayed follow-ups.
-- Make or n8n owns Telegram delivery, delays, and external automation.
+- Make owns Telegram delivery, delays, and external automation. n8n is not
+  used.
 - Do not introduce Supabase or Vercel.
 - Neon PostgreSQL is implemented. The optional LLM layer may only classify,
   extract structured data, and phrase questions; deterministic server code

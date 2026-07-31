@@ -86,7 +86,7 @@ Callback-модуль выполняет `POST` на `callbackUrl` из конв
 Уникальные `action` у каждой ветки обязательны. `automation_logs` содержит
 уникальный индекс (`integration_event_id`, `platform`, `workflow_name`,
 `action`): одинаковый `action` в двух ветках схлопнется в одну строку, и
-дублирующая ветка останется незаметной в `/demo/automations`.
+дублирующая ветка останется незаметной в `/workspace/automations`.
 
 ### Разобранный случай двойных уведомлений
 
@@ -105,7 +105,7 @@ Placeholder не выполняется, поэтому его фильтр ни
 - `booking.created` — ветка 2 плюс ветка 3 = 5 операций;
 - `handoff.required` — только ветка 3 = 3 операции и одно сообщение.
 
-Дубли не были видны в `/demo/automations`, потому что все три callback
+Дубли не были видны в `/workspace/automations`, потому что все три callback
 отправляли один и тот же `action=telegram.send`, а уникальный индекс
 `automation_logs` схлопывал их в одну строку.
 
@@ -224,5 +224,5 @@ Follow-up отправляется по заявке ровно один раз,
    демонстрационное бронирование.
 6. Повторно запустить сценарий 2. Ожидание — `followUpEventsCreated` и
    `reminderEventsCreated` равны нулю, новых сообщений нет.
-7. Открыть `/demo/automations` и проверить, что все события имеют статус
+7. Открыть `/workspace/automations` и проверить, что все события имеют статус
    `delivered`, а у каждого есть ровно один `automation_log`.

@@ -3,21 +3,22 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 
-import { publicDemoNavigation } from "@/lib/crm/constants";
+import { workspaceNavigation } from "@/lib/crm/constants";
 import { cn } from "@/lib/utils";
 
-export function DemoNav() {
+export function WorkspaceNav() {
   const pathname = usePathname();
 
   return (
     <nav
-      aria-label="Разделы демонстрационной CRM"
+      aria-label="Разделы рабочего пространства"
       className="flex gap-1 overflow-x-auto pb-1"
     >
-      {publicDemoNavigation.map((item) => {
+      {workspaceNavigation.map((item) => {
         const isActive =
           pathname === item.href ||
-          (item.href === "/demo/crm" && pathname.startsWith("/demo/leads/"));
+          (item.href === "/workspace/leads" &&
+            pathname.startsWith("/workspace/leads/"));
 
         return (
           <Link

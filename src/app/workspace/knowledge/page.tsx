@@ -19,7 +19,7 @@ export default async function KnowledgePage() {
       <DemoPageHeader
         eyebrow="RAG-контент"
         title="База знаний"
-        description="Read-only представление документов из Neon. Здесь нет локальных mock-массивов или скрытого контента."
+        description="Документы из Neon, по которым AI-диспетчер отвечает клиентам. Здесь нет локальных mock-массивов или скрытого контента."
       />
 
       {documents.length === 0 ? (

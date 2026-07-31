@@ -4,7 +4,7 @@ import { listPublicLeads } from "@/server/crm/queries";
 
 export const dynamic = "force-dynamic";
 
-export default async function CrmPage() {
+export default async function LeadsPage() {
   const leads = await listPublicLeads();
 
   return (
@@ -12,7 +12,7 @@ export default async function CrmPage() {
       <DemoPageHeader
         eyebrow="Операционный обзор"
         title="Заявки FixFlow Service"
-        description="Read-only Kanban обновляется из Neon каждые 10 секунд. Карточки открываются для просмотра, но их нельзя редактировать или перетаскивать."
+        description="Kanban обновляется из Neon каждые 10 секунд. Карточки открываются для просмотра статуса, истории и AI-логики каждой заявки."
       />
       <KanbanBoard
         initialLeads={leads}

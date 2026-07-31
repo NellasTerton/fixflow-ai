@@ -118,7 +118,7 @@ export function KanbanBoard({
 
     try {
       const response = await fetch(
-        `/api/demo/leads${queryString ? `?${queryString}` : ""}`,
+        `/api/workspace/leads${queryString ? `?${queryString}` : ""}`,
         { cache: "no-store", signal },
       );
 
@@ -320,7 +320,7 @@ export function KanbanBoard({
         <div className="-mx-4 mt-5 overflow-x-auto px-4 pb-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
           <div
             className="grid min-w-max auto-cols-[minmax(280px,320px)] grid-flow-col gap-4"
-            aria-label="Read-only Kanban заявок"
+            aria-label="Kanban заявок"
           >
             {visibleStatuses.map((status) => {
               const statusLeads = leads.filter((lead) => lead.status === status);
@@ -407,7 +407,7 @@ function LeadCard({ lead }: { lead: PublicLead }) {
 
   return (
     <Link
-      href={`/demo/leads/${lead.id}`}
+      href={`/workspace/leads/${lead.id}`}
       className="block rounded-xl border border-[#102328]/8 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-[#6f9b45]/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6f9b45]"
     >
       <div className="flex items-start justify-between gap-3">

@@ -9,11 +9,11 @@ export default function LeadNotFound() {
       <EmptyState
         icon={FileQuestion}
         title="Заявка не найдена"
-        description="В публичной CRM доступны только существующие демонстрационные заявки."
+        description="В рабочем пространстве доступны только существующие заявки."
       />
       <div className="mt-5 text-center">
         <Link
-          href="/demo/crm"
+          href="/workspace/leads"
           className="text-sm font-semibold text-[#477233] hover:underline"
         >
           Вернуться к Kanban

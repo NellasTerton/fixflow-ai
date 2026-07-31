@@ -55,7 +55,7 @@ export default async function RequestSuccessPage({
               {lead.publicNumber}
             </h1>
             <p className="mt-3 text-sm leading-6 text-white/60">
-              Это номер публичной демонстрационной заявки. Данные будут
+              Это номер тестовой заявки в рабочем пространстве. Данные будут
               считаться временными в течение 48 часов.
             </p>
           </header>
@@ -107,7 +107,7 @@ export default async function RequestSuccessPage({
 
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <Link
-                href={`/demo/leads/${lead.id}`}
+                href={`/workspace/leads/${lead.id}`}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#102328] px-5 text-sm font-semibold text-white transition hover:bg-[#1d363c]"
               >
                 Открыть заявку в CRM

@@ -17,7 +17,7 @@ import { serviceCategories, workflowStages } from "@/lib/demo";
 
 const evaluationSteps = [
   {
-    title: "Опишите проблему в demo-чате",
+    title: "Опишите проблему в чате с AI",
     description:
       "AI определит направление и предложит услугу по базе знаний. Пример сообщения можно скопировать одним кликом.",
     example: "Не работает стиральная машина, вода не сливается после стирки",
@@ -25,7 +25,7 @@ const evaluationSteps = [
   {
     title: "Ответьте на пару вопросов",
     description:
-      "Имя, demo-телефон и район — сервер принимает только заведомо демонстрационные значения.",
+      "Имя, телефон для теста и район — сервер принимает только заведомо тестовые значения.",
     example: "+380 00 000 1042",
   },
   {
@@ -35,37 +35,37 @@ const evaluationSteps = [
     example: null,
   },
   {
-    title: "Посмотрите результат в CRM",
+    title: "Посмотрите результат в рабочем пространстве",
     description:
-      "В карточке заявки — раздел «Почему AI так ответил?» с источниками RAG, а в /demo/automations — webhook в Make и Telegram.",
+      "В карточке заявки — раздел «Почему AI так ответил?» с источниками RAG, а в разделе автоматизаций — webhook в Make и Telegram.",
     example: null,
   },
 ] as const;
 
 const exploreLinks = [
   {
-    href: "/demo/crm",
+    href: "/workspace/leads",
     icon: KanbanSquare,
-    title: "Публичная CRM",
-    description: "Read-only Kanban по восьми статусам, фильтры и поиск.",
+    title: "Заявки",
+    description: "Kanban по восьми статусам, фильтры и поиск.",
   },
   {
-    href: "/demo/ai-runs",
+    href: "/workspace/ai-runs",
     icon: Sparkles,
     title: "AI runs",
     description: "Каждый вызов LLM: вход, confidence, найденные RAG-чанки.",
   },
   {
-    href: "/demo/automations",
+    href: "/workspace/automations",
     icon: Radio,
     title: "Автоматизации",
     description: "Webhook-события и callback от сценариев Make.",
   },
   {
-    href: "/demo/knowledge",
+    href: "/workspace/knowledge",
     icon: BookOpenText,
     title: "База знаний",
-    description: "Demo-документы, из которых AI берёт цены и условия.",
+    description: "Документы, из которых AI берёт цены и условия.",
   },
 ] as const;
 
@@ -87,10 +87,10 @@ export default function Home() {
             FixFlow AI
           </div>
           <Link
-            href="/demo/crm"
+            href="/workspace/leads"
             className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-white/70 transition hover:bg-white/10 hover:text-white"
           >
-            Открыть CRM
+            Открыть рабочее пространство
           </Link>
         </div>
 
@@ -98,36 +98,38 @@ export default function Home() {
           <div>
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#bbf451]/30 bg-[#bbf451]/10 px-3 py-1.5 text-sm text-[#d9ff98]">
               <span className="size-1.5 rounded-full bg-[#bbf451]" />
-              Клиентский чат и CRM работают
+              AI-диспетчер и рабочее пространство работают
             </div>
             <h1 className="max-w-3xl text-balance text-5xl font-semibold leading-[1.02] tracking-[-0.045em] sm:text-6xl lg:text-7xl">
               Заявка на выезд без потерянных деталей
             </h1>
             <p className="mt-7 max-w-2xl text-pretty text-lg leading-8 text-white/65">
-              FixFlow AI — демонстрационный AI-диспетчер, который проведёт
-              клиента от первого сообщения до заявки в публичной CRM.
+              FixFlow AI — AI-диспетчер и операционная система для выездных
+              сервисных компаний. Принимает обращения, квалифицирует клиента,
+              отвечает по базе знаний, записывает на выезд и передаёт заявку
+              диспетчеру.
             </p>
             <div className="mt-9 flex flex-wrap items-center gap-4">
               <Link
                 href="/chat"
                 className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#bbf451] px-5 text-sm font-semibold text-[#071a1f] transition hover:bg-[#d0ff78]"
               >
-                Открыть demo-чат
+                Попробовать AI-диспетчера
                 <ArrowRight className="size-4" aria-hidden="true" />
               </Link>
               <Link
-                href="/request"
-                className="inline-flex h-11 items-center rounded-xl border border-white/15 bg-white/5 px-5 text-sm font-semibold text-white transition hover:bg-white/10"
+                href="/workspace/leads"
+                className="inline-flex h-11 items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 text-sm font-semibold text-white transition hover:bg-white/10"
               >
-                Обычная форма
+                Открыть рабочее пространство
+                <ArrowRight className="size-4" aria-hidden="true" />
               </Link>
-              <Link
-                href="/demo/crm"
-                className="inline-flex h-11 items-center rounded-xl border border-white/15 bg-white/5 px-5 text-sm font-semibold text-white transition hover:bg-white/10"
-              >
-                Посмотреть CRM
+            </div>
+            <div className="mt-6 flex flex-wrap items-center gap-4 text-sm text-white/55">
+              <Link href="/request" className="underline-offset-4 hover:underline">
+                Обычная форма заявки
               </Link>
-              <div className="flex items-center gap-2 text-sm text-white/55">
+              <div className="flex items-center gap-2">
                 <ShieldCheck
                   className="size-4 text-[#bbf451]"
                   aria-hidden="true"
@@ -168,15 +170,15 @@ export default function Home() {
         <div className="mx-auto max-w-6xl">
           <div className="max-w-2xl">
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#477233]">
-              Как оценить продукт за 3 минуты
+              Как это работает
             </p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-[#102328] sm:text-4xl">
-              Пройдите основной сценарий сами
+              Пройдите путь клиента за 3 минуты
             </h2>
             <p className="mt-4 text-pretty text-base leading-7 text-[#526166]">
               Ниже — четыре шага от первого сообщения в чате до заявки в
-              публичной CRM. Примеры можно скопировать одним кликом: сервер
-              принимает только заведомо демонстрационные данные.
+              рабочем пространстве. Примеры можно скопировать одним кликом:
+              сервер принимает только заведомо тестовые данные.
             </p>
           </div>
 
@@ -211,7 +213,7 @@ export default function Home() {
               href="/chat"
               className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#102328] px-5 text-sm font-semibold text-white transition hover:bg-[#1d363c]"
             >
-              Начать с demo-чата
+              Начать чат с AI-диспетчером
               <ArrowRight className="size-4" aria-hidden="true" />
             </Link>
           </div>
@@ -251,8 +253,9 @@ export default function Home() {
             })}
           </div>
           <p className="mt-10 text-sm text-[#6b777a]">
-            Обычная demo-форма создаёт заявку в Neon, позволяет выбрать
-            свободное время и сразу показывает результат в публичной CRM.
+            Обычная форма заявки создаёт запись в Neon, позволяет выбрать
+            свободное время и сразу показывает результат в рабочем
+            пространстве.
           </p>
         </div>
       </section>
@@ -267,8 +270,9 @@ export default function Home() {
               Заглянуть внутрь напрямую
             </h2>
             <p className="mt-4 text-pretty text-base leading-7 text-[#526166]">
-              Все разделы CRM публичны и доступны без входа в систему —
-              открывайте их сразу, если хотите оценить только код и данные.
+              Все разделы рабочего пространства публичны и доступны без входа
+              в систему — открывайте их сразу, если хотите посмотреть без
+              диалога с AI.
             </p>
           </div>
 

@@ -44,7 +44,7 @@ export async function bookPublicSlot(
       };
     }
 
-    revalidatePath("/demo/crm");
+    revalidatePath("/workspace/leads");
     revalidatePath("/request/success");
 
     return {

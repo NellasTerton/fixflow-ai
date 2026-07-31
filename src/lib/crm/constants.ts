@@ -55,19 +55,19 @@ export const sourceLabels: Record<CrmSource, string> = {
   ai_chat: "AI-чат",
 };
 
-export const publicDemoNavigation = [
-  { href: "/demo/crm", label: "Заявки" },
-  { href: "/demo/knowledge", label: "База знаний" },
-  { href: "/demo/ai-runs", label: "AI runs" },
-  { href: "/demo/automations", label: "Автоматизации" },
+export const workspaceNavigation = [
+  { href: "/workspace/leads", label: "Заявки" },
+  { href: "/workspace/knowledge", label: "База знаний" },
+  { href: "/workspace/ai-runs", label: "AI runs" },
+  { href: "/workspace/automations", label: "Автоматизации" },
 ] as const;
 
-export function isPublicDemoPath(pathname: string) {
+export function isPublicWorkspacePath(pathname: string) {
   return (
-    pathname === "/demo/crm" ||
-    pathname === "/demo/knowledge" ||
-    pathname === "/demo/ai-runs" ||
-    pathname === "/demo/automations" ||
-    /^\/demo\/leads\/[^/]+$/.test(pathname)
+    pathname === "/workspace/leads" ||
+    pathname === "/workspace/knowledge" ||
+    pathname === "/workspace/ai-runs" ||
+    pathname === "/workspace/automations" ||
+    /^\/workspace\/leads\/[^/]+$/.test(pathname)
   );
 }

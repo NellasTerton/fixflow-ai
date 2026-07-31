@@ -60,7 +60,7 @@ export default async function LeadDetailPage({
   return (
     <>
       <Link
-        href="/demo/crm"
+        href="/workspace/leads"
         className="inline-flex items-center gap-2 text-sm font-medium text-[#477233] hover:text-[#315b2d]"
       >
         <ArrowLeft className="size-4" aria-hidden="true" />
@@ -273,7 +273,7 @@ export default async function LeadDetailPage({
               compact
               icon={Workflow}
               title="Автоматизации пока не запускались"
-              description="Make или n8n запишут сюда Telegram, задержки и follow-up."
+              description="Make запишет сюда Telegram, задержки и follow-up."
             />
           ) : (
             <div className="space-y-3">

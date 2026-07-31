@@ -30,7 +30,7 @@ const initialMessages: TranscriptMessage[] = [
     id: 1,
     sender: "assistant",
     content:
-      "Здравствуйте! Опишите, что случилось. Я помогу оформить demo-заявку, а сервер проверит каждый шаг.",
+      "Здравствуйте! Опишите, что случилось. Я помогу оформить заявку, а сервер проверит каждый шаг.",
   },
 ];
 
@@ -155,7 +155,8 @@ export function ChatClient() {
                   aria-hidden="true"
                 />
                 <p className="text-sm leading-5 text-amber-50">
-                  Это публичное демо. Не вводите реальные персональные данные.
+                  Это тестовое рабочее пространство. Не вводите реальные
+                  персональные данные.
                 </p>
               </div>
             </div>
@@ -290,7 +291,7 @@ export function ChatClient() {
                 <div className="flex flex-col gap-3 sm:flex-row">
                   {result?.collectedData.leadId && (
                     <Link
-                      href={`/demo/leads/${result.collectedData.leadId}`}
+                      href={`/workspace/leads/${result.collectedData.leadId}`}
                       className="inline-flex h-11 items-center justify-center rounded-xl bg-[#102328] px-5 text-sm font-semibold text-white"
                     >
                       Открыть {result.collectedData.publicNumber} в CRM

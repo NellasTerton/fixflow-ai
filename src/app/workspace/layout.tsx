@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { Bot, Eye, ShieldCheck } from "lucide-react";
+import { Bot, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 
-import { DemoNav } from "@/components/crm/demo-nav";
+import { WorkspaceNav } from "@/components/crm/workspace-nav";
 
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
@@ -17,24 +17,24 @@ export async function generateMetadata(): Promise<Metadata> {
   const imageUrl = new URL("/og.png", `${protocol}://${host}`).toString();
 
   return {
-    title: "FixFlow AI — публичная демонстрационная CRM",
+    title: "FixFlow AI — рабочее пространство",
     description:
-      "Read-only Kanban, база знаний, AI runs и журнал автоматизаций FixFlow AI.",
+      "Заявки, база знаний, AI runs и автоматизации FixFlow AI — AI-диспетчера и операционной системы для выездных сервисных компаний.",
     openGraph: {
       title: "FixFlow AI",
-      description: "Публичная демонстрационная CRM",
+      description: "Рабочее пространство FixFlow AI",
       images: [{ url: imageUrl, width: 1536, height: 1024 }],
     },
     twitter: {
       card: "summary_large_image",
       title: "FixFlow AI",
-      description: "Публичная демонстрационная CRM",
+      description: "Рабочее пространство FixFlow AI",
       images: [imageUrl],
     },
   };
 }
 
-export default function DemoLayout({
+export default function WorkspaceLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
@@ -52,15 +52,11 @@ export default function DemoLayout({
               <span>
                 FixFlow AI
                 <span className="ml-2 hidden text-xs font-normal text-white/40 sm:inline">
-                  CRM
+                  Рабочее пространство
                 </span>
               </span>
             </Link>
-            <DemoNav />
-            <span className="hidden items-center gap-1.5 text-xs text-white/45 md:flex">
-              <Eye className="size-3.5" aria-hidden="true" />
-              Только чтение
-            </span>
+            <WorkspaceNav />
           </div>
         </div>
       </header>
@@ -68,7 +64,8 @@ export default function DemoLayout({
       <div className="border-b border-[#315b2d]/15 bg-[#e8f5ce]">
         <div className="mx-auto flex max-w-[1600px] items-center justify-center gap-2 px-4 py-2.5 text-center text-xs font-semibold text-[#315b2d] sm:px-6 sm:text-sm lg:px-8">
           <ShieldCheck className="size-4 shrink-0" aria-hidden="true" />
-          Публичная демонстрационная CRM. Данные вымышлены
+          Вы находитесь в тестовом рабочем пространстве FixFlow Service.
+          Данные вымышлены.
         </div>
       </div>
 
