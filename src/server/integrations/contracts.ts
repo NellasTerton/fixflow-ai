@@ -4,7 +4,16 @@ export const integrationEventTypes = [
   "lead.created",
   "booking.created",
   "handoff.required",
+  "lead.followup_due",
+  "booking.reminder_due",
 ] as const;
+
+export const scheduledEventTypes = [
+  "lead.followup_due",
+  "booking.reminder_due",
+] as const;
+
+export type ScheduledEventType = (typeof scheduledEventTypes)[number];
 
 export const integrationEventTypeSchema = z.enum(integrationEventTypes);
 

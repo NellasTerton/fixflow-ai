@@ -25,7 +25,7 @@ export default async function AutomationsPage() {
       <DemoPageHeader
         eyebrow="Webhook-контур"
         title="Автоматизации"
-        description="Next.js только фиксирует и отправляет события. Telegram, задержки и follow-up выполняются внешними сценариями Make или n8n."
+        description="Next.js только фиксирует и отправляет события. Telegram, расписание, follow-up и напоминания выполняют внешние сценарии Make."
       />
 
       <div className="mt-7 grid gap-5 xl:grid-cols-2">
@@ -76,7 +76,7 @@ export default async function AutomationsPage() {
               compact
               icon={Workflow}
               title="Логов пока нет"
-              description="Make или n8n запишут сюда результаты внешних workflow."
+              description="Make запишет сюда результаты внешних workflow."
             />
           ) : (
             <div className="space-y-3">

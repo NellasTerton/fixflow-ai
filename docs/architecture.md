@@ -24,10 +24,11 @@ Claude Messages provider подключается опционально чер�
       ├─ server-only слой Drizzle ORM
       │   └─ Neon PostgreSQL
       └─ исходящие webhook-события
-          └─ Make или n8n
+          └─ Make
+              ├─ Router по eventType
               ├─ Telegram
-              ├─ задержки
-              └─ follow-up
+              └─ расписание отложенных автоматизаций
+                  └─ POST /api/integrations/automation/scan
 ```
 
 ## Подключение к базе
@@ -184,8 +185,11 @@ Next.js отображает чат и CRM, проверяет входные д
 Telegram-сообщения, не запускает cron, не держит таймеры и не выполняет
 отложенный follow-up.
 
-Make или n8n получают webhook-события и отвечают за Telegram, задержки,
-follow-up и остальные внешние автоматизации.
+Make получает webhook-события и отвечает за Telegram, задержки, follow-up и
+остальные внешние автоматизации. Отложенные сценарии Make вызывают
+`POST /api/integrations/automation/scan`: Next.js только отвечает, какие
+follow-up и напоминания наступили, и передаёт новые события в тот же outbox.
+Полное описание контура находится в `docs/automations.md`.
 
 ## Данные и безопасность
 

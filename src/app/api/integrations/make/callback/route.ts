@@ -1,7 +1,6 @@
-import { createHash, timingSafeEqual } from "node:crypto";
-
 import { makeCallbackSchema } from "@/server/integrations/contracts";
 import { recordMakeCallback } from "@/server/integrations/callback-service";
+import { matchesAutomationSecret } from "@/server/integrations/secrets";
 
 const MAX_CALLBACK_BODY_SIZE = 32_000;
 
@@ -53,14 +52,8 @@ export async function POST(request: Request) {
 }
 
 function isAuthorized(candidate: string | null): boolean {
-  const expected = process.env.AUTOMATION_CALLBACK_SECRET;
-
-  if (!candidate || !expected) {
-    return false;
-  }
-
-  const candidateHash = createHash("sha256").update(candidate).digest();
-  const expectedHash = createHash("sha256").update(expected).digest();
-
-  return timingSafeEqual(candidateHash, expectedHash);
+  return matchesAutomationSecret(
+    candidate,
+    process.env.AUTOMATION_CALLBACK_SECRET,
+  );
 }
