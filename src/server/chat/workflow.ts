@@ -701,6 +701,33 @@ async function persistRetry(
   );
 }
 
+/**
+ * True when the raw message already satisfies the field the FSM is waiting
+ * for on this step. Used to keep a plain answer (e.g. "Северный район" while
+ * collecting the address) from being reclassified as a knowledge question
+ * just because it contains a topic word the RAG heuristic also looks for.
+ */
+export function isExpectedStepAnswer(
+  step: ChatStep,
+  message: string,
+  now = new Date(),
+): boolean {
+  switch (step) {
+    case "name":
+      return nameSchema.safeParse(message).success;
+    case "phone":
+      return phoneSchema.safeParse(message).success;
+    case "area":
+      return areaSchema.safeParse(message).success;
+    case "preferred_date":
+      return preferredDateSchema(now).safeParse(message).success;
+    case "preferred_time":
+      return timeSchema.safeParse(message).success;
+    default:
+      return false;
+  }
+}
+
 export async function validateChatExtraction(
   store: ChatWorkflowStore,
   originalProblem: string,

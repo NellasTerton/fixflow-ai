@@ -20,6 +20,7 @@ import type { RagAnswer } from "../rag/types";
 import { databaseChatStore } from "./store";
 import {
   continueChatWorkflow,
+  isExpectedStepAnswer,
   startChatWorkflow,
   validateChatExtraction,
 } from "./workflow";
@@ -142,7 +143,12 @@ export async function continueChatWithLlm(
   });
 
   const provider = createAnthropicProvider();
-  if (provider && isKnowledgeQuestion(message, result)) {
+  const expectsPlainAnswer = isExpectedStepAnswer(
+    conversation.currentStep,
+    message,
+  );
+
+  if (provider && !expectsPlainAnswer && isKnowledgeQuestion(message, result)) {
     const answer = await answerWithRag({
       question: message,
       modelCategory:

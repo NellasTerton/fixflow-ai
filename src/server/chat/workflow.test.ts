@@ -7,6 +7,7 @@ import type {
 import type { CrmCategory } from "../../lib/crm/constants";
 import {
   continueChatWorkflow,
+  isExpectedStepAnswer,
   startChatWorkflow,
   type ChatService,
   type ChatSlot,
@@ -358,6 +359,37 @@ class InMemoryChatStore implements ChatWorkflowStore {
     );
   }
 }
+
+describe("isExpectedStepAnswer", () => {
+  it("accepts a plain area answer that mentions a district word", () => {
+    expect(
+      isExpectedStepAnswer("area", "Демо-город, Северный район"),
+    ).toBe(true);
+    expect(isExpectedStepAnswer("area", "Северный")).toBe(true);
+  });
+
+  it("rejects an area answer that leaks a house or apartment number", () => {
+    expect(
+      isExpectedStepAnswer("area", "Северный район, дом 12"),
+    ).toBe(false);
+  });
+
+  it("validates the field expected by each step", () => {
+    expect(isExpectedStepAnswer("name", "Демо Клиент")).toBe(true);
+    expect(isExpectedStepAnswer("phone", "+380 00 000 1099")).toBe(true);
+    expect(isExpectedStepAnswer("phone", "не помню номер")).toBe(false);
+    expect(isExpectedStepAnswer("preferred_time", "10:00")).toBe(true);
+    expect(isExpectedStepAnswer("preferred_time", "утром")).toBe(false);
+    expect(
+      isExpectedStepAnswer("preferred_date", "2026-08-06", NOW),
+    ).toBe(true);
+  });
+
+  it("never matches steps without a plain-text field, like category or slot", () => {
+    expect(isExpectedStepAnswer("category", "plumbing")).toBe(false);
+    expect(isExpectedStepAnswer("slot", "any text")).toBe(false);
+  });
+});
 
 function slotId(category: CrmCategory) {
   const index = {
