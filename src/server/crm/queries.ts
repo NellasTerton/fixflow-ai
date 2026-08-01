@@ -5,6 +5,7 @@ import {
   asc,
   desc,
   eq,
+  gt,
   ilike,
   isNotNull,
   isNull,
@@ -16,6 +17,7 @@ import {
   createAddressSummary,
   redactPublicText,
   maskPhone,
+  stripDemoTag,
 } from "../../lib/crm/presentation";
 import type {
   PublicAiRun,
@@ -38,6 +40,17 @@ import {
   leads,
   messages,
 } from "../db/schema";
+
+/**
+ * Seed leads carry a long expiresAt only for the optional `demo:reset`
+ * cleanup script and must stay visible regardless of it. User-submitted
+ * leads (website form, chat) are meant to age out of the public board once
+ * their 48h TTL passes — this was written on every insert but never
+ * enforced on read until now.
+ */
+function notExpiredCondition(now: Date) {
+  return or(eq(leads.isSeed, true), isNull(leads.expiresAt), gt(leads.expiresAt, now));
+}
 
 interface LeadRow {
   id: string;
@@ -87,15 +100,13 @@ function toPublicLead(row: LeadRow): PublicLead {
   return {
     id: row.id,
     publicNumber: row.publicNumber,
-    customerName: row.customerName,
+    customerName: stripDemoTag(row.customerName),
     maskedPhone: maskPhone(row.phone),
     addressSummary: createAddressSummary(row.address),
     category: row.category,
     serviceType: row.serviceType,
-    problemDescription: redactPublicText(
-      row.problemDescription,
-      row.phone,
-      row.address,
+    problemDescription: stripDemoTag(
+      redactPublicText(row.problemDescription, row.phone, row.address),
     ),
     status: row.status,
     priority: row.priority,
@@ -115,6 +126,11 @@ export async function listPublicLeads(
   filters: PublicCrmFilters = {},
 ): Promise<PublicLead[]> {
   const conditions: SQL[] = [eq(customers.isDemo, true)];
+  const notExpired = notExpiredCondition(new Date());
+
+  if (notExpired) {
+    conditions.push(notExpired);
+  }
 
   if (filters.category) {
     conditions.push(eq(leads.category, filters.category));
@@ -155,12 +171,19 @@ export async function listPublicLeads(
 export async function getPublicLeadDetail(
   id: string,
 ): Promise<PublicLeadDetail | null> {
+  const notExpired = notExpiredCondition(new Date());
   const [row] = await db
     .select(leadSelection)
     .from(leads)
     .innerJoin(customers, eq(leads.customerId, customers.id))
     .leftJoin(bookings, eq(bookings.leadId, leads.id))
-    .where(and(eq(leads.id, id), eq(customers.isDemo, true)))
+    .where(
+      and(
+        eq(leads.id, id),
+        eq(customers.isDemo, true),
+        ...(notExpired ? [notExpired] : []),
+      ),
+    )
     .limit(1);
 
   if (!row) {

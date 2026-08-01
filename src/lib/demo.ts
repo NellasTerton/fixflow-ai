@@ -18,12 +18,12 @@ export const serviceCategories = [
 
 export const workflowStages = [
   "Клиентский чат",
-  "Категория и RAG",
+  "Определение категории",
   "Контакты",
   "Выбор времени",
   "Создание заявки",
-  "Публичная CRM",
-  "Webhook",
+  "Рабочее пространство",
+  "Уведомление диспетчеру",
   "Telegram и follow-up",
 ] as const;
 

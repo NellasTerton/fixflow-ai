@@ -14,9 +14,19 @@ export function maskPhone(phone: string) {
   return `${country} •• ••• ${digits.slice(-4)}`;
 }
 
+/**
+ * Server-side writes tag every free-text field with a leading "[ДЕМО]" so
+ * persisted data is unambiguously fictional even if someone typed a
+ * real-looking name or address. The tag stays in the raw column (and in
+ * Telegram/log output); public display strips it so a lead card reads
+ * naturally instead of literally showing the bracket.
+ */
+export function stripDemoTag(value: string) {
+  return value.replace(/^\[ДЕМО\]\s*/u, "");
+}
+
 export function createAddressSummary(address: string) {
-  const city = address
-    .replace(/^\[ДЕМО\]\s*/u, "")
+  const city = stripDemoTag(address)
     .split(",")[0]
     ?.trim();
 

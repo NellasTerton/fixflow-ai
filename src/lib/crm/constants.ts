@@ -55,11 +55,17 @@ export const sourceLabels: Record<CrmSource, string> = {
   ai_chat: "AI-чат",
 };
 
+/**
+ * `primary` items are the day-to-day business surface; `secondary` items are
+ * the technical evidence (AI reasoning, webhook/automation logs) — still one
+ * click away, but shown de-emphasized so they don't compete with the
+ * business nav for attention.
+ */
 export const workspaceNavigation = [
-  { href: "/workspace/leads", label: "Заявки" },
-  { href: "/workspace/knowledge", label: "База знаний" },
-  { href: "/workspace/ai-runs", label: "AI runs" },
-  { href: "/workspace/automations", label: "Автоматизации" },
+  { href: "/workspace/leads", label: "Заявки", tier: "primary" },
+  { href: "/workspace/knowledge", label: "База знаний", tier: "primary" },
+  { href: "/workspace/ai-runs", label: "AI runs", tier: "secondary" },
+  { href: "/workspace/automations", label: "Автоматизации", tier: "secondary" },
 ] as const;
 
 export function isPublicWorkspacePath(pathname: string) {

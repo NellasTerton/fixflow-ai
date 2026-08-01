@@ -4,6 +4,7 @@ import {
   createAddressSummary,
   maskPhone,
   redactPublicText,
+  stripDemoTag,
 } from "./presentation";
 
 describe("public CRM data masking", () => {
@@ -34,5 +35,10 @@ describe("public CRM data masking", () => {
     expect(result).not.toContain("Тестовая");
     expect(result).toContain("[телефон скрыт]");
     expect(result).toContain("[точный адрес скрыт]");
+  });
+
+  it("strips the demo safety tag for on-screen display only", () => {
+    expect(stripDemoTag("[ДЕМО] Иван Петров")).toBe("Иван Петров");
+    expect(stripDemoTag("Иван Петров")).toBe("Иван Петров");
   });
 });

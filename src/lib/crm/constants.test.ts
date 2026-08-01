@@ -19,4 +19,15 @@ describe("public workspace access", () => {
     ).toBe(true);
     expect(isPublicWorkspacePath("/account/login")).toBe(false);
   });
+
+  it("keeps technical evidence out of the primary business nav", () => {
+    const byTier = Object.fromEntries(
+      workspaceNavigation.map((item) => [item.href, item.tier]),
+    );
+
+    expect(byTier["/workspace/leads"]).toBe("primary");
+    expect(byTier["/workspace/knowledge"]).toBe("primary");
+    expect(byTier["/workspace/ai-runs"]).toBe("secondary");
+    expect(byTier["/workspace/automations"]).toBe("secondary");
+  });
 });
