@@ -15,7 +15,13 @@ import {
 } from "../src/server/rag/seed";
 
 const KNOWLEDGE_DIRECTORY = join(process.cwd(), "knowledge", "demo");
+// Every source file must carry this marker so a contributor can never seed
+// real company content by accident. The marker itself is stripped below
+// before chunking — the chunker embeds raw text verbatim, so leaving it in
+// would let "Демонстрационные данные вымышленной компании" surface in a
+// retrieved chunk and potentially in the chat's answer to a customer.
 const DEMO_NOTICE = "Демонстрационные данные вымышленной компании";
+const DEMO_NOTICE_LINE = /^>\s*Демонстрационные данные вымышленной компании\.?\s*\n+/mu;
 
 const categories: Record<string, KnowledgeDocumentInput["category"]> = {
   "services-appliances.md": "appliance_repair",
@@ -60,11 +66,13 @@ async function loadKnowledgeDocuments(): Promise<KnowledgeDocumentInput[]> {
         throw new Error(`Demo notice is missing in ${fileName}`);
       }
 
+      const embeddedContent = content.replace(DEMO_NOTICE_LINE, "");
+
       return {
         title: firstHeading(content) ?? fileName,
         category,
         source: `knowledge/demo/${fileName}`,
-        content,
+        content: embeddedContent,
       };
     }),
   );

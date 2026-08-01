@@ -25,7 +25,7 @@ const CHAT_CATEGORIES = [
 const nameSchema = z
   .string()
   .trim()
-  .min(2, "Укажите демонстрационное имя")
+  .min(2, "Укажите имя")
   .max(60, "Имя должно быть не длиннее 60 символов");
 const phoneSchema = z
   .string()
@@ -33,8 +33,8 @@ const phoneSchema = z
   .max(30, "Телефон слишком длинный")
   .transform(normalizePhone)
   .refine(
-    (value) => /^\+38000\d{7}$/.test(value),
-    "Используйте безопасный demo-номер вида +380 00 000 1042",
+    (value) => /^\+7000\d{7}$/.test(value),
+    "Используйте безопасный тестовый номер вида +7 000 000 1042",
   );
 const areaSchema = z
   .string()
@@ -264,7 +264,7 @@ export async function continueChatWorkflow(
         "demoName",
         "phone",
         naturalQuestion(
-          "Укажите безопасный демонстрационный телефон, например +380 00 000 1042.",
+          "Укажите безопасный телефон, например +7 000 000 1042.",
           guidance.assistantReply,
         ),
       );
@@ -828,7 +828,7 @@ async function determineNextPrompt(
   if (!data.phone) {
     return askPrompt(
       "phone",
-      "Укажите безопасный демонстрационный телефон, например +380 00 000 1042.",
+      "Укажите безопасный телефон, например +7 000 000 1042.",
     );
   }
 
@@ -975,7 +975,7 @@ const completeLeadDataSchema = z.object({
   serviceId: z.uuid(),
   serviceType: z.string().min(1).max(160),
   demoName: z.string().min(2).max(60),
-  phone: z.string().regex(/^\+38000\d{7}$/),
+  phone: z.string().regex(/^\+7000\d{7}$/),
   area: z.string().min(2).max(120),
   preferredDate: z.string().date(),
   preferredTime: z.string().regex(/^\d{2}:\d{2}$/),

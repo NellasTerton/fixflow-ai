@@ -16,9 +16,9 @@ const followUpCandidate: FollowUpCandidate = {
   publicNumber: "FF-1047",
   category: "plumbing",
   serviceType: "Устранение протечки",
-  customerName: "[ДЕМО] Ирина Д.",
-  maskedPhone: "+380 •• ••• 0042",
-  addressSummary: "Демо-город · точный адрес скрыт",
+  customerName: "Ирина Д.",
+  maskedPhone: "+7 •• ••• 0042",
+  addressSummary: "Тверской район · точный адрес скрыт",
   createdAt: new Date("2026-07-31T11:00:00.000Z"),
 };
 
@@ -28,9 +28,9 @@ const reminderCandidate: ReminderCandidate = {
   publicNumber: "FF-1048",
   category: "air_conditioning",
   serviceType: "Установка кондиционера",
-  customerName: "[ДЕМО] Павел К.",
-  maskedPhone: "+380 •• ••• 0043",
-  addressSummary: "Демо-город · точный адрес скрыт",
+  customerName: "Павел К.",
+  maskedPhone: "+7 •• ••• 0043",
+  addressSummary: "Тверской район · точный адрес скрыт",
   startsAt: new Date("2026-07-31T13:30:00.000Z"),
 };
 
@@ -181,12 +181,12 @@ describe("scheduled automation scan", () => {
 
     expect(followUpMessage).toContain("FF-1047");
     expect(followUpMessage).toContain("2026-07-31 11:00 UTC");
-    expect(followUpMessage).toContain("+380 •• ••• 0042");
+    expect(followUpMessage).toContain("+7 •• ••• 0042");
     expect(reminderMessage).toContain("FF-1048");
     expect(reminderMessage).toContain("2026-07-31 13:30 UTC");
 
     for (const message of [followUpMessage, reminderMessage]) {
-      expect(message).not.toMatch(/\+380\d/);
+      expect(message).not.toMatch(/\+7000\d/);
       expect(message).not.toContain("улица");
     }
   });

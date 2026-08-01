@@ -79,12 +79,12 @@ describe("FixFlow Service demo seed", () => {
 
     // The seed reads as a real dispatcher's board, so the safety property is
     // no longer "every field is labelled fake" — it is that no row can ever
-    // reach a real person. +380 00 is not an assignable operator code.
+    // reach a real person. +7 000 is not an assignable operator code.
     expect(
       [...records.customers.values()].every(
         (customer) =>
           customer.isDemo === true &&
-          customer.phone.startsWith("+380 00 000 ") &&
+          customer.phone.startsWith("+7 000 000 ") &&
           (!customer.email || customer.email.endsWith("@example.com")),
       ),
     ).toBe(true);

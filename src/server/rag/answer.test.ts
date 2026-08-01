@@ -69,11 +69,11 @@ describe("RAG answers", () => {
   it("rejects an invented price", async () => {
     const answer = await answerWithRag({
       question: "Сколько стоит устранить протечку?",
-      provider: provider("Услуга стоит 9 999 ₴ [1]."),
+      provider: provider("Услуга стоит 9 999 ₽ [1]."),
       retrieve: async () => [
         makeSource({
           category: "plumbing",
-          content: "Устранение протечки стоит ориентировочно 900–1 800 ₴.",
+          content: "Устранение протечки стоит ориентировочно 900–1 800 ₽.",
         }),
       ],
     });

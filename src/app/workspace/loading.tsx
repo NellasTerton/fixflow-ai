@@ -1,6 +1,6 @@
-export default function DemoLoading() {
+export default function WorkspaceLoading() {
   return (
-    <div className="animate-pulse" aria-label="Загрузка демонстрационной CRM">
+    <div className="animate-pulse" aria-label="Загрузка рабочего пространства">
       <div className="h-3 w-32 rounded bg-[#dce1d8]" />
       <div className="mt-4 h-10 w-80 max-w-full rounded-xl bg-[#dce1d8]" />
       <div className="mt-3 h-5 w-[34rem] max-w-full rounded bg-[#e3e7df]" />

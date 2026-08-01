@@ -27,7 +27,7 @@ const scenarios = [
       name: "Ремонт стиральной машины",
     },
     problem: "Демонстрационная стиральная машина не сливает воду.",
-    phone: "+380 00 000 2001",
+    phone: "+7 000 000 2001",
   },
   {
     category: "plumbing",
@@ -36,8 +36,8 @@ const scenarios = [
       category: "plumbing",
       name: "Устранение протечки",
     },
-    problem: "В демонстрационной ванной появилась условная протечка.",
-    phone: "+380 00 000 2002",
+    problem: "В ванной появилась протечка под мойкой.",
+    phone: "+7 000 000 2002",
   },
   {
     category: "air_conditioning",
@@ -47,7 +47,7 @@ const scenarios = [
       name: "Диагностика кондиционера",
     },
     problem: "Демонстрационный кондиционер показывает тестовую ошибку.",
-    phone: "+380 00 000 2003",
+    phone: "+7 000 000 2003",
   },
 ] as const;
 
@@ -92,7 +92,7 @@ describe.each(scenarios)(
       const answers = [
         "Клиент Демонстрационный",
         phone,
-        "Демо-район Северный",
+        "Тверской район",
         "2026-08-01",
         "12:00",
       ];
@@ -174,12 +174,12 @@ describe("validated LLM guidance", () => {
           serviceId: service.id,
           serviceType: service.name,
           demoName: "Клиент Извлечённый",
-          phone: "+380000002010",
-          area: "Демо-район Извлечённый",
+          phone: "+70000002010",
+          area: "Басманный район",
           preferredDate: "2026-08-01",
         },
         assistantReply:
-          "В какое демонстрационное время вам было бы удобнее принять мастера?",
+          "В какое время вам было бы удобнее принять мастера?",
       },
     );
 
@@ -376,7 +376,7 @@ describe("isExpectedStepAnswer", () => {
 
   it("validates the field expected by each step", () => {
     expect(isExpectedStepAnswer("name", "Демо Клиент")).toBe(true);
-    expect(isExpectedStepAnswer("phone", "+380 00 000 1099")).toBe(true);
+    expect(isExpectedStepAnswer("phone", "+7 000 000 1099")).toBe(true);
     expect(isExpectedStepAnswer("phone", "не помню номер")).toBe(false);
     expect(isExpectedStepAnswer("preferred_time", "10:00")).toBe(true);
     expect(isExpectedStepAnswer("preferred_time", "утром")).toBe(false);

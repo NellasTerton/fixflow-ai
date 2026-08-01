@@ -61,11 +61,12 @@ export function RequestForm({
           />
           <div>
             <p className="font-semibold">
-              Это публичное демо. Не вводите реальные персональные данные
+              Это тестовое рабочее пространство. Не вводите реальные
+              персональные данные
             </p>
             <p className="mt-1 text-amber-800/80">
-              Используйте вымышленное имя, demo-телефон и только название
-              района — без дома и квартиры.
+              Используйте вымышленное имя, безопасный тестовый телефон и
+              только название района — без дома и квартиры.
             </p>
           </div>
         </div>
@@ -73,7 +74,7 @@ export function RequestForm({
 
       <div className="grid gap-5 md:grid-cols-2">
         <Field
-          label="Демонстрационное имя"
+          label="Имя"
           name="demoName"
           error={state.errors?.demoName?.[0]}
         >
@@ -84,15 +85,15 @@ export function RequestForm({
             minLength={2}
             maxLength={60}
             autoComplete="off"
-            placeholder="Например, Тестовый Клиент"
+            placeholder="Как к вам обращаться"
             className={inputClass}
           />
         </Field>
 
         <Field
-          label="Безопасный demo-телефон"
+          label="Телефон"
           name="phone"
-          hint="Нерабочий код 00 защищает от случайного реального номера"
+          hint="Нерабочий код 000 защищает от случайного реального номера"
           error={state.errors?.phone?.[0]}
         >
           <input
@@ -103,7 +104,7 @@ export function RequestForm({
             maxLength={30}
             autoComplete="off"
             inputMode="tel"
-            placeholder="+380 00 000 1042"
+            placeholder="+7 000 000 1042"
             className={inputClass}
           />
         </Field>
@@ -172,7 +173,7 @@ export function RequestForm({
           minLength={10}
           maxLength={1000}
           rows={5}
-          placeholder="Опишите вымышленную неисправность и её признаки"
+          placeholder="Опишите неисправность и её признаки"
           className={`${inputClass} min-h-32 resize-y py-3`}
         />
       </Field>
@@ -191,7 +192,7 @@ export function RequestForm({
             minLength={2}
             maxLength={120}
             autoComplete="off"
-            placeholder="Демо-район Северный"
+            placeholder="Например, Тверской"
             className={inputClass}
           />
         </Field>
@@ -228,7 +229,7 @@ export function RequestForm({
             className="size-4 text-[#477233]"
             aria-hidden="true"
           />
-          Заявка удаляется через 48 часов
+          Заявка видна в системе 48 часов
         </div>
         <Button
           type="submit"
@@ -241,7 +242,7 @@ export function RequestForm({
           ) : (
             <ArrowRight className="size-4" aria-hidden="true" />
           )}
-          {pending ? "Создаём заявку…" : "Создать demo-заявку"}
+          {pending ? "Создаём заявку…" : "Создать заявку"}
         </Button>
       </div>
     </form>

@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 import { ChatClient } from "@/components/chat/chat-client";
 
 export const metadata: Metadata = {
-  title: "Клиентский чат | FixFlow AI",
+  title: "Написать диспетчеру | FixFlow Service",
   description:
-    "Гибридный демонстрационный чат FixFlow с LLM и детерминированным fallback.",
+    "Опишите проблему — AI-диспетчер подберёт услугу, назовёт цену и запишет мастера на свободное время.",
 };
 
 export default function ChatPage() {

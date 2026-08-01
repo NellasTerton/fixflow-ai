@@ -46,7 +46,7 @@ export function inputSettings(field: ChatField): ChatInputSettings {
         ...common,
         label: "Телефон",
         type: "tel",
-        placeholder: "+380 00 000 1042",
+        placeholder: "+7 000 000 1042",
         maxLength: 30,
       };
     case "area":
@@ -54,7 +54,7 @@ export function inputSettings(field: ChatField): ChatInputSettings {
         ...common,
         label: "Район",
         type: "text",
-        placeholder: "Например: Оболонский",
+        placeholder: "Например: Тверской",
         maxLength: 120,
       };
     case "preferredDate":

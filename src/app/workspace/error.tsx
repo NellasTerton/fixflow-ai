@@ -4,7 +4,7 @@ import { AlertTriangle, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
-export default function DemoError({
+export default function WorkspaceError({
   unstable_retry,
 }: {
   error: Error & { digest?: string };
@@ -20,8 +20,7 @@ export default function DemoError({
           Не удалось загрузить данные
         </h1>
         <p className="mt-2 text-sm leading-6 text-[#687679]">
-          CRM осталась read-only. Попробуйте повторить безопасный запрос к
-          демонстрационной базе.
+          Попробуйте повторить запрос ещё раз.
         </p>
         <Button
           className="mt-6 bg-[#102328] text-white"

@@ -1,5 +1,5 @@
 const PHONE_PATTERN =
-  /(?:\+?380|0)[\s()-]*(?:\d[\s()-]*){8,10}\d/g;
+  /(?:\+?7|8)[\s()-]*(?:\d[\s()-]*){8,10}\d/g;
 const ADDRESS_PATTERN =
   /(?:улица|ул\.?|вулиця|вул\.?|проспект|просп\.?|переулок|пер\.?|провулок|дом|д\.|будинок|квартира|кв\.?)\s+[^,.;\n]{1,80}/giu;
 
@@ -10,7 +10,7 @@ export function maskPhone(phone: string) {
     return "••••";
   }
 
-  const country = digits.startsWith("380") ? "+380" : "+";
+  const country = digits.startsWith("7") ? "+7" : "+";
   return `${country} •• ••• ${digits.slice(-4)}`;
 }
 
@@ -67,12 +67,12 @@ export function formatPriceRange(
   const to = priceTo === null ? null : formatter.format(priceTo / 100);
 
   // Equal bounds mean the work is done and this is the invoiced amount, not
-  // an estimate — rendering "1 800–1 800 ₴" would read like a broken range.
+  // an estimate — rendering "1 800–1 800 ₽" would read like a broken range.
   if (from && to) {
-    return from === to ? `${from} ₴` : `${from}–${to} ₴`;
+    return from === to ? `${from} ₽` : `${from}–${to} ₽`;
   }
 
-  return from ? `от ${from} ₴` : `до ${to} ₴`;
+  return from ? `от ${from} ₽` : `до ${to} ₽`;
 }
 
 export function formatDateTime(value: string | null) {

@@ -27,7 +27,7 @@ export default async function KnowledgePage() {
           <EmptyState
             icon={BookOpen}
             title="Документы ещё не добавлены"
-            description="Когда демонстрационный RAG-контент появится в Neon, он автоматически отобразится на этой странице."
+            description="Когда контент появится в Neon, он автоматически отобразится на этой странице."
           />
         </div>
       ) : (

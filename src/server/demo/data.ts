@@ -47,7 +47,7 @@ function toDateOnly(value: Date) {
 }
 
 /**
- * Prices are stored in kopiykas, so 120_000 renders as 1 200 ₴. A lead's
+ * Prices are stored in kopecks, so 120_000 renders as 1 200 ₽. A lead's
  * estimate is always derived from its service's published range (see
  * `estimateFor`), so the number on a card can be traced back to the price
  * list instead of looking arbitrary.
@@ -195,18 +195,18 @@ interface CustomerBlueprint {
 }
 
 const customerBlueprints: CustomerBlueprint[] = [
-  { name: "Ольга Коваленко", district: "Оболонский район", street: "проспект Героев Днепра, 12, кв. 47" },
-  { name: "Андрей Мельник", district: "Печерский район", street: "улица Институтская, 18, кв. 9" },
-  { name: "Ирина Шевченко", district: "Шевченковский район", street: "улица Гоголевская, 32, кв. 15" },
-  { name: "Сергей Бондаренко", district: "Подольский район", street: "улица Хорива, 44, кв. 3" },
-  { name: "Наталья Ткаченко", district: "Голосеевский район", street: "проспект Науки, 60, кв. 112" },
-  { name: "Дмитрий Кравченко", district: "Дарницкий район", street: "улица Ревуцкого, 9, кв. 208" },
-  { name: "Елена Полищук", district: "Соломенский район", street: "улица Гарматная, 26, кв. 71" },
-  { name: "Виктор Савченко", district: "Святошинский район", street: "проспект Победы, 134, кв. 55" },
-  { name: "Марина Гриценко", district: "Деснянский район", street: "улица Милославская, 4, кв. 88" },
-  { name: "Павел Романюк", district: "Днепровский район", street: "улица Челябинская, 17, кв. 22" },
-  { name: "Анна Литвиненко", district: "Оболонский район", street: "улица Маршала Тимошенко, 21, кв. 64" },
-  { name: "Роман Гончаренко", district: "Печерский район", street: "улица Мечникова, 8, кв. 31" },
+  { name: "Ольга Кузнецова", district: "Тверской район", street: "улица Тверская, 12, кв. 47" },
+  { name: "Андрей Соколов", district: "Басманный район", street: "улица Покровка, 18, кв. 9" },
+  { name: "Ирина Морозова", district: "Хамовники", street: "улица Остоженка, 32, кв. 15" },
+  { name: "Сергей Волков", district: "Останкинский район", street: "проспект Мира, 44, кв. 3" },
+  { name: "Наталья Егорова", district: "Митино", street: "Пятницкое шоссе, 60, кв. 112" },
+  { name: "Дмитрий Новиков", district: "Строгино", street: "улица Твардовского, 9, кв. 208" },
+  { name: "Елена Павлова", district: "Бибирево", street: "улица Пришвина, 26, кв. 71" },
+  { name: "Виктор Королёв", district: "Марьино", street: "Люблинская улица, 134, кв. 55" },
+  { name: "Марина Лебедева", district: "Кузьминки", street: "Волгоградский проспект, 4, кв. 88" },
+  { name: "Павел Козлов", district: "Царицыно", street: "улица Луганская, 17, кв. 22" },
+  { name: "Анна Никитина", district: "Чертаново", street: "Варшавское шоссе, 21, кв. 64" },
+  { name: "Роман Орлов", district: "Ясенево", street: "улица Голубинская, 8, кв. 31" },
 ];
 
 interface LeadBlueprint {
@@ -383,10 +383,10 @@ export function createDemoSeedData(now = new Date()): DemoSeedData {
     (customer, index) => ({
       id: demoId(2, index + 1),
       displayName: customer.name,
-      // The +380 00 prefix is not an assignable Ukrainian operator code, so
+      // The +7 000 prefix is not an assignable Russian operator code, so
       // these numbers can never reach a real person. They are masked before
       // they ever reach the browser.
-      phone: `+380 00 000 ${String(index + 1).padStart(4, "0")}`,
+      phone: `+7 000 000 ${String(index + 1).padStart(4, "0")}`,
       email:
         index % 4 === 3
           ? null

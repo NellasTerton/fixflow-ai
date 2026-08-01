@@ -2,19 +2,21 @@ import { z } from "zod";
 
 import { crmCategories } from "../crm/constants";
 
-const DEMO_PHONE_PATTERN = /^\+38000\d{7}$/;
+// "000" is not an assignable Russian operator code, so no number matching
+// this pattern can ever reach a real subscriber.
+const DEMO_PHONE_PATTERN = /^\+7000\d{7}$/;
 const EXACT_ADDRESS_PATTERN =
   /(?:(?:кв(?:артира)?|дом|будинок)|\b\d{1,4}[/-]\d{1,4}\b)/iu;
 
 export function normalizePhone(value: string) {
   const digits = value.replace(/\D/g, "");
 
-  if (digits.startsWith("380")) {
+  if (digits.startsWith("7")) {
     return `+${digits}`;
   }
 
-  if (digits.startsWith("00")) {
-    return `+380${digits}`;
+  if (digits.startsWith("000")) {
+    return `+7${digits}`;
   }
 
   return `+${digits}`;
@@ -31,7 +33,7 @@ export function createPublicRequestSchema(now = new Date()) {
     demoName: z
       .string()
       .trim()
-      .min(2, "Укажите демонстрационное имя")
+      .min(2, "Укажите имя")
       .max(60, "Имя должно быть не длиннее 60 символов"),
     phone: z
       .string()
@@ -40,7 +42,7 @@ export function createPublicRequestSchema(now = new Date()) {
       .transform(normalizePhone)
       .refine(
         (value) => DEMO_PHONE_PATTERN.test(value),
-        "Используйте безопасный demo-номер вида +380 00 000 1042",
+        "Используйте безопасный тестовый номер вида +7 000 000 1042",
       ),
     category: z.enum(crmCategories, {
       error: "Выберите категорию",
