@@ -12,113 +12,30 @@ import {
   UserRound,
 } from "lucide-react";
 import Link from "next/link";
-import { FormEvent, useMemo, useRef, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 
-import type {
-  ChatField,
-  ChatResponse,
-} from "@/lib/chat/contracts";
-
-interface TranscriptMessage {
-  id: number;
-  sender: "assistant" | "customer";
-  content: string;
-}
-
-const initialMessages: TranscriptMessage[] = [
-  {
-    id: 1,
-    sender: "assistant",
-    content:
-      "Здравствуйте! Опишите, что случилось. Я помогу оформить заявку, а сервер проверит каждый шаг.",
-  },
-];
+import { inputSettings } from "./input-settings";
+import { useChatSession } from "./use-chat-session";
 
 export function ChatClient() {
-  const [conversationId, setConversationId] = useState<string | null>(null);
-  const [result, setResult] = useState<ChatResponse | null>(null);
-  const [messages, setMessages] =
-    useState<TranscriptMessage[]>(initialMessages);
+  const {
+    result,
+    messages,
+    pending,
+    error,
+    isFinished,
+    showOptions,
+    sendMessage,
+  } = useChatSession();
   const [value, setValue] = useState("");
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const nextMessageId = useRef(2);
 
   const nextField = result?.missingFields[0] ?? "problemDescription";
   const input = useMemo(() => inputSettings(nextField), [nextField]);
-  const showOptions =
-    result &&
-    ["show_categories", "show_services", "show_slots"].includes(
-      result.action,
-    ) &&
-    result.options.length > 0;
-  const isFinished =
-    result?.action === "complete" ||
-    result?.action === "handoff_to_human";
-
-  async function sendMessage(
-    submittedValue: string,
-    displayValue = submittedValue,
-  ) {
-    const normalized = submittedValue.trim();
-
-    if (!normalized || pending || isFinished) {
-      return;
-    }
-
-    setPending(true);
-    setError(null);
-    appendMessage("customer", displayValue);
-    setValue("");
-
-    try {
-      const response = await fetch(
-        conversationId ? "/api/chat/message" : "/api/chat/start",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(
-            conversationId
-              ? { conversationId, message: normalized }
-              : { message: normalized },
-          ),
-        },
-      );
-      const body = (await response.json()) as ChatResponse | { error?: string };
-
-      if (!response.ok || !("conversationId" in body)) {
-        throw new Error(
-          "error" in body && body.error
-            ? body.error
-            : "Не удалось отправить сообщение",
-        );
-      }
-
-      setConversationId(body.conversationId);
-      setResult(body);
-      appendMessage("assistant", body.reply);
-    } catch (caught) {
-      setError(
-        caught instanceof Error
-          ? caught.message
-          : "Не удалось отправить сообщение",
-      );
-    } finally {
-      setPending(false);
-    }
-  }
-
-  function appendMessage(
-    sender: TranscriptMessage["sender"],
-    content: string,
-  ) {
-    const id = nextMessageId.current++;
-    setMessages((current) => [...current, { id, sender, content }]);
-  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void sendMessage(value);
+    setValue("");
   }
 
   return (
@@ -138,14 +55,14 @@ export function ChatClient() {
               <Bot className="size-6" aria-hidden="true" />
             </span>
             <p className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-[#bbf451]">
-              FixFlow AI · hybrid
+              FixFlow Service
             </p>
             <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">
-              Клиентский чат
+              Заявка на мастера
             </h1>
             <p className="mt-4 text-sm leading-6 text-white/65">
-              LLM распознаёт намерение и данные, а детерминированный сервер
-              проверяет поля, создаёт заявку и бронирует реальный слот.
+              Опишите проблему — подберём услугу, назовём диапазон цены и
+              запишем мастера на свободное время.
             </p>
 
             <div className="mt-8 rounded-2xl border border-amber-300/30 bg-amber-300/10 p-4">
@@ -155,8 +72,8 @@ export function ChatClient() {
                   aria-hidden="true"
                 />
                 <p className="text-sm leading-5 text-amber-50">
-                  Это тестовое рабочее пространство. Не вводите реальные
-                  персональные данные.
+                  Не указывайте настоящий телефон и точный адрес — заявки из
+                  этого чата попадают в публичную базу.
                 </p>
               </div>
             </div>
@@ -164,11 +81,11 @@ export function ChatClient() {
             <div className="mt-8 space-y-3 text-sm text-white/60">
               <p className="flex items-center gap-3">
                 <CheckCircle2 className="size-4 text-[#bbf451]" />
-                Безопасный fallback при ошибке LLM
+                Ответы только по нашему прайсу
               </p>
               <p className="flex items-center gap-3">
                 <CalendarDays className="size-4 text-[#bbf451]" />
-                Только реальные свободные слоты
+                Только реально свободные слоты
               </p>
             </div>
           </aside>
@@ -179,7 +96,7 @@ export function ChatClient() {
                 Диспетчер FixFlow
               </p>
               <p className="mt-0.5 text-xs text-[#738083]">
-                LLM-подсказки · решения по фиксированным правилам
+                Обычно отвечает сразу
               </p>
             </header>
 
@@ -221,7 +138,7 @@ export function ChatClient() {
               {pending && (
                 <div className="flex items-center gap-2 text-xs text-[#738083]">
                   <LoaderCircle className="size-4 animate-spin" />
-                  Сохраняю ответ…
+                  Печатает…
                 </div>
               )}
 
@@ -246,9 +163,6 @@ export function ChatClient() {
                           </span>
                         </div>
                         <p className="mt-1.5 leading-5">{source.excerpt}</p>
-                        <p className="mt-2 font-mono text-[10px] text-[#829093]">
-                          {source.source}
-                        </p>
                       </article>
                     ))}
                   </div>
@@ -266,7 +180,7 @@ export function ChatClient() {
                 </p>
               )}
 
-              {showOptions ? (
+              {showOptions && result ? (
                 <div className="grid gap-2 sm:grid-cols-2">
                   {result.options.map((option) => (
                     <button
@@ -294,7 +208,7 @@ export function ChatClient() {
                       href={`/workspace/leads/${result.collectedData.leadId}`}
                       className="inline-flex h-11 items-center justify-center rounded-xl bg-[#102328] px-5 text-sm font-semibold text-white"
                     >
-                      Открыть {result.collectedData.publicNumber} в CRM
+                      Открыть {result.collectedData.publicNumber}
                     </Link>
                   )}
                   <button
@@ -302,7 +216,7 @@ export function ChatClient() {
                     onClick={() => window.location.reload()}
                     className="h-11 rounded-xl border border-[#102328]/12 px-5 text-sm font-semibold text-[#263a3f]"
                   >
-                    Начать новый чат
+                    Новая заявка
                   </button>
                 </div>
               ) : (
@@ -343,75 +257,4 @@ export function ChatClient() {
       </div>
     </main>
   );
-}
-
-function inputSettings(field: ChatField) {
-  const now = new Date();
-  const maxDate = new Date(now);
-  maxDate.setUTCDate(maxDate.getUTCDate() + 14);
-
-  const common = {
-    min: undefined as string | undefined,
-    max: undefined as string | undefined,
-  };
-
-  switch (field) {
-    case "problemDescription":
-      return {
-        ...common,
-        label: "Описание проблемы",
-        type: "text",
-        placeholder: "Например: демо-стиральная машина не сливает воду",
-        maxLength: 1000,
-      };
-    case "demoName":
-      return {
-        ...common,
-        label: "Демонстрационное имя",
-        type: "text",
-        placeholder: "Например: Алексей Тестовый",
-        maxLength: 60,
-      };
-    case "phone":
-      return {
-        ...common,
-        label: "Демонстрационный телефон",
-        type: "tel",
-        placeholder: "+380 00 000 1042",
-        maxLength: 30,
-      };
-    case "area":
-      return {
-        ...common,
-        label: "Район",
-        type: "text",
-        placeholder: "Например: Демо-район Северный",
-        maxLength: 120,
-      };
-    case "preferredDate":
-      return {
-        label: "Желательная дата",
-        type: "date",
-        placeholder: "",
-        min: now.toISOString().slice(0, 10),
-        max: maxDate.toISOString().slice(0, 10),
-        maxLength: undefined,
-      };
-    case "preferredTime":
-      return {
-        ...common,
-        label: "Желательное время",
-        type: "time",
-        placeholder: "",
-        maxLength: undefined,
-      };
-    default:
-      return {
-        ...common,
-        label: "Ответ",
-        type: "text",
-        placeholder: "Введите ответ",
-        maxLength: 1000,
-      };
-  }
 }

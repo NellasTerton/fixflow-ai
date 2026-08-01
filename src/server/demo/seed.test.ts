@@ -76,28 +76,29 @@ describe("FixFlow Service demo seed", () => {
     ];
 
     expect(allRecords.every((record) => record.isSeed === true)).toBe(true);
+
+    // The seed reads as a real dispatcher's board, so the safety property is
+    // no longer "every field is labelled fake" — it is that no row can ever
+    // reach a real person. +380 00 is not an assignable operator code.
     expect(
       [...records.customers.values()].every(
         (customer) =>
           customer.isDemo === true &&
-          customer.displayName.startsWith("[ДЕМО]") &&
           customer.phone.startsWith("+380 00 000 ") &&
-          customer.address.includes("дом DEMO-"),
+          (!customer.email || customer.email.endsWith("@example.com")),
       ),
     ).toBe(true);
 
     expect(new Set([...records.leads.values()].map((lead) => lead.status))).toEqual(
-      new Set([
-        "new",
-        "qualifying",
-        "waiting_booking",
-        "booked",
-        "in_progress",
-        "completed",
-        "cancelled",
-        "human_required",
-      ]),
+      new Set(["new", "booked", "in_progress", "completed", "cancelled"]),
     );
+
+    // A completed lead shows the invoiced amount, not an open estimate.
+    expect(
+      [...records.leads.values()]
+        .filter((lead) => lead.status === "completed")
+        .every((lead) => lead.estimatedPriceFrom === lead.estimatedPriceTo),
+    ).toBe(true);
 
     const latestAllowedSlot = new Date(now);
     latestAllowedSlot.setUTCDate(latestAllowedSlot.getUTCDate() + 14);

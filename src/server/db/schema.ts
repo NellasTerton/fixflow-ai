@@ -24,15 +24,19 @@ export const serviceCategoryValues = [
   "common",
 ] as const;
 
+/**
+ * The dispatcher pipeline as a field-service company actually runs it. An
+ * earlier revision also had `qualifying`, `waiting_booking` and
+ * `human_required`; the first two both meant "not scheduled yet" and the
+ * third is a condition rather than a stage, so it became the
+ * `leads.needs_operator` flag instead of its own board column.
+ */
 export const leadStatusValues = [
   "new",
-  "qualifying",
-  "waiting_booking",
   "booked",
   "in_progress",
   "completed",
   "cancelled",
-  "human_required",
 ] as const;
 
 export const leadPriorityValues = ["low", "normal", "high", "urgent"] as const;
@@ -207,6 +211,8 @@ export const leads = pgTable(
     problemDescription: text("problem_description").notNull(),
     status: leadStatusEnum("status").default("new").notNull(),
     priority: leadPriorityEnum("priority").default("normal").notNull(),
+    /** AI could not resolve the request on its own and asked for a human. */
+    needsOperator: boolean("needs_operator").default(false).notNull(),
     source: leadSourceEnum("source").notNull(),
     preferredDate: date("preferred_date"),
     preferredTime: time("preferred_time", { withTimezone: false }),
@@ -222,6 +228,7 @@ export const leads = pgTable(
     index("leads_customer_id_idx").on(table.customerId),
     index("leads_status_created_at_idx").on(table.status, table.createdAt),
     index("leads_category_status_idx").on(table.category, table.status),
+    index("leads_needs_operator_idx").on(table.needsOperator),
     index("leads_expires_at_idx").on(table.expiresAt),
     check(
       "leads_estimated_price_from_nonnegative",

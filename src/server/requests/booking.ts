@@ -74,7 +74,7 @@ export const databaseBookingStore: BookingStore = {
             on customer.id = lead.customer_id
           where lead.id = ${input.leadId}
             and customer.is_demo = true
-            and lead.status in ('new', 'qualifying', 'waiting_booking')
+            and lead.status = 'new'
             and (lead.expires_at is null or lead.expires_at > ${now})
         ),
         claimed_slot as (

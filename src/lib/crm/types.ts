@@ -16,6 +16,8 @@ export interface PublicLead {
   problemDescription: string;
   status: CrmLeadStatus;
   priority: CrmPriority;
+  /** AI escalated this request: a dispatcher needs to pick it up manually. */
+  needsOperator: boolean;
   source: CrmSource;
   preferredDate: string | null;
   preferredTime: string | null;

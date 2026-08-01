@@ -111,11 +111,11 @@ export async function createPublicRequest(
   const submissionId = randomUUID();
   const eventId = randomUUID();
   const expiresAt = new Date(now.getTime() + 48 * 60 * 60 * 1000);
-  const displayName = withDemoPrefix(input.demoName);
-  const address = withDemoPrefix(input.area);
+  const displayName = input.demoName;
+  const address = input.area;
   const publicNumber = await createPublicNumber();
   const problemDescription = redactPublicText(
-    withDemoPrefix(input.problemDescription),
+    input.problemDescription,
     input.phone,
     address,
   );
@@ -145,8 +145,8 @@ export async function createPublicRequest(
           customerId,
           category: input.category,
           serviceType: service.name,
-          problemDescription: withDemoPrefix(input.problemDescription),
-          status: "waiting_booking" satisfies CrmLeadStatus,
+          problemDescription: input.problemDescription,
+          status: "new" satisfies CrmLeadStatus,
           priority: "normal",
           source: "website_form",
           preferredDate: input.preferredDate,
@@ -186,7 +186,7 @@ export async function createPublicRequest(
           addressSummary: createAddressSummary(address),
           problemDescription,
           telegramMessage: [
-            `🆕 Новая demo-заявка ${publicNumber}`,
+            `🆕 Новая заявка ${publicNumber}`,
             `Категория: ${input.category}`,
             `Услуга: ${service.name}`,
             `Клиент: ${displayName}`,
@@ -294,10 +294,6 @@ async function enforceRateLimit(keyHash: string) {
   if (!row || Number(row.request_count) > RATE_LIMIT_MAX_REQUESTS) {
     throw new PublicRequestRateLimitError();
   }
-}
-
-function withDemoPrefix(value: string) {
-  return value.startsWith("[ДЕМО]") ? value : `[ДЕМО] ${value}`;
 }
 
 function getResultRows<T>(result: unknown): T[] {

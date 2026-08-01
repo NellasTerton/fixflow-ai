@@ -8,6 +8,7 @@ import {
   RefreshCw,
   Search,
   Snowflake,
+  UserRound,
   Wrench,
   X,
 } from "lucide-react";
@@ -59,13 +60,10 @@ const categoryIcons = {
 
 const statusAccent: Record<CrmLeadStatus, string> = {
   new: "bg-sky-500",
-  qualifying: "bg-violet-500",
-  waiting_booking: "bg-amber-500",
   booked: "bg-blue-500",
   in_progress: "bg-orange-500",
   completed: "bg-emerald-500",
   cancelled: "bg-slate-400",
-  human_required: "bg-red-500",
 };
 
 const priorityTone: Record<CrmPriority, string> = {
@@ -441,12 +439,22 @@ function LeadCard({ lead }: { lead: PublicLead }) {
         {lead.problemDescription}
       </p>
 
+      {lead.needsOperator ? (
+        <p className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-700">
+          <UserRound className="size-3" aria-hidden="true" />
+          Нужен оператор
+        </p>
+      ) : null}
+
       <div className="mt-4 border-t border-[#102328]/8 pt-3">
         <p className="text-sm font-semibold text-[#263a3f]">
           {formatPriceRange(
             lead.estimatedPriceFrom,
             lead.estimatedPriceTo,
           )}
+          <span className="ml-1.5 text-[11px] font-normal text-[#8b9698]">
+            {lead.status === "completed" ? "итог" : "оценка"}
+          </span>
         </p>
         <div className="mt-2 flex items-center gap-1.5 text-xs text-[#748184]">
           <CalendarClock className="size-3.5" aria-hidden="true" />

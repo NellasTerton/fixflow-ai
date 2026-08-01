@@ -15,11 +15,10 @@ export function maskPhone(phone: string) {
 }
 
 /**
- * Server-side writes tag every free-text field with a leading "[ДЕМО]" so
- * persisted data is unambiguously fictional even if someone typed a
- * real-looking name or address. The tag stays in the raw column (and in
- * Telegram/log output); public display strips it so a lead card reads
- * naturally instead of literally showing the bracket.
+ * Legacy cleanup: an earlier revision prefixed every stored name, address
+ * and description with "[ДЕМО]". Writes no longer do that, but rows created
+ * before the change can still be inside their 48h retention window, so
+ * public display keeps stripping the tag until they age out.
  */
 export function stripDemoTag(value: string) {
   return value.replace(/^\[ДЕМО\]\s*/u, "");
@@ -67,8 +66,10 @@ export function formatPriceRange(
   const from = priceFrom === null ? null : formatter.format(priceFrom / 100);
   const to = priceTo === null ? null : formatter.format(priceTo / 100);
 
+  // Equal bounds mean the work is done and this is the invoiced amount, not
+  // an estimate — rendering "1 800–1 800 ₴" would read like a broken range.
   if (from && to) {
-    return `${from}–${to} ₴`;
+    return from === to ? `${from} ₴` : `${from}–${to} ₴`;
   }
 
   return from ? `от ${from} ₴` : `до ${to} ₴`;

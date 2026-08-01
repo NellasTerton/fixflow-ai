@@ -160,7 +160,7 @@ export const databaseChatStore: ChatWorkflowStore = {
       updated_lead as (
         update ${leads} as lead
         set
-          status = 'human_required',
+          needs_operator = true,
           updated_at = ${input.now}
         from updated_conversation
         where ${status} = 'human_required'
@@ -273,9 +273,12 @@ export const databaseChatStore: ChatWorkflowStore = {
     const leadEventId = randomUUID();
     const handoffEventId = randomUUID();
     const expiresAt = new Date(input.now.getTime() + 48 * 60 * 60 * 1000);
-    const leadStatus = input.hasSlots
-      ? "waiting_booking"
-      : "human_required";
+    // A lead with no slots left is still a normal new lead — it just needs a
+    // human to arrange the visit, which is the needs_operator flag rather
+    // than a separate pipeline stage. The conversation status is a different
+    // enum and keeps its own human_required value.
+    const leadStatus = "new";
+    const needsOperator = !input.hasSlots;
     const conversationStatus = input.hasSlots
       ? "active"
       : "human_required";
@@ -317,10 +320,10 @@ export const databaseChatStore: ChatWorkflowStore = {
         )
         select
           ${customerId},
-          ${withDemoPrefix(input.data.demoName)},
+          ${input.data.demoName},
           ${input.data.phone},
           null,
-          ${withDemoPrefix(input.data.area)},
+          ${input.data.area},
           true,
           false,
           ${expiresAt},
@@ -346,6 +349,7 @@ export const databaseChatStore: ChatWorkflowStore = {
           problem_description,
           status,
           priority,
+          needs_operator,
           source,
           preferred_date,
           preferred_time,
@@ -362,9 +366,10 @@ export const databaseChatStore: ChatWorkflowStore = {
           upserted_customer.id,
           ${input.data.category},
           selected_service.name,
-          ${withDemoPrefix(input.data.problemDescription)},
+          ${input.data.problemDescription},
           ${leadStatus},
           'normal',
+          ${needsOperator},
           'ai_chat',
           ${input.data.preferredDate}::date,
           ${input.data.preferredTime}::time,
@@ -459,21 +464,21 @@ export const databaseChatStore: ChatWorkflowStore = {
             'serviceType', selected_service.name,
             'priority', 'normal',
             'source', 'ai_chat',
-            'customerName', ${withDemoPrefix(input.data.demoName)}::text,
+            'customerName', ${input.data.demoName}::text,
             'maskedPhone', ${maskPhone(input.data.phone)}::text,
             'addressSummary',
-              ${createAddressSummary(withDemoPrefix(input.data.area))}::text,
+              ${createAddressSummary(input.data.area)}::text,
             'problemDescription',
               ${redactPublicText(
-                withDemoPrefix(input.data.problemDescription),
+                input.data.problemDescription,
                 input.data.phone,
-                withDemoPrefix(input.data.area),
+                input.data.area,
               )}::text,
             'telegramMessage',
               '🆕 Новая chat-заявка ' || created_lead.public_number
               || E'\nКатегория: ' || ${input.data.category}::text
               || E'\nУслуга: ' || selected_service.name
-              || E'\nКлиент: ' || ${withDemoPrefix(input.data.demoName)}::text
+              || E'\nКлиент: ' || ${input.data.demoName}::text
               || E'\nТелефон: ' || ${maskPhone(input.data.phone)}::text
           ),
           'pending',
@@ -560,7 +565,7 @@ export const databaseChatStore: ChatWorkflowStore = {
           and conversation.status = 'active'
           and conversation.current_step = ${input.expectedStep}
           and conversation.lead_id = ${input.data.leadId}
-          and lead.status = 'waiting_booking'
+          and lead.status = 'new'
         for update of conversation, lead
       ),
       claimed_slot as (
@@ -755,10 +760,6 @@ function isChatStep(value: string): value is ChatStep {
     "slot",
     "complete",
   ].includes(value);
-}
-
-function withDemoPrefix(value: string) {
-  return value.startsWith("[ДЕМО]") ? value : `[ДЕМО] ${value}`;
 }
 
 function getResultRows<T = Record<string, unknown>>(result: unknown): T[] {

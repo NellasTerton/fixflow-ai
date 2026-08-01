@@ -39,6 +39,7 @@ import {
   integrationEvents,
   leads,
   messages,
+  services,
 } from "../db/schema";
 
 /**
@@ -63,6 +64,7 @@ interface LeadRow {
   problemDescription: string;
   status: PublicLead["status"];
   priority: PublicLead["priority"];
+  needsOperator: boolean;
   source: PublicLead["source"];
   preferredDate: string | null;
   preferredTime: string | null;
@@ -85,6 +87,7 @@ const leadSelection = {
   problemDescription: leads.problemDescription,
   status: leads.status,
   priority: leads.priority,
+  needsOperator: leads.needsOperator,
   source: leads.source,
   preferredDate: leads.preferredDate,
   preferredTime: leads.preferredTime,
@@ -110,6 +113,7 @@ function toPublicLead(row: LeadRow): PublicLead {
     ),
     status: row.status,
     priority: row.priority,
+    needsOperator: row.needsOperator,
     source: row.source,
     preferredDate: row.preferredDate,
     preferredTime: row.preferredTime,
@@ -302,6 +306,31 @@ export async function getPublicLeadDetail(
     integrationEvents: eventRows.map(toPublicIntegrationEvent),
     automationLogs: automationRows.map(toPublicAutomationLog),
   };
+}
+
+export interface PublicServicePrice {
+  id: string;
+  category: PublicLead["category"];
+  name: string;
+  priceFrom: number;
+  priceTo: number;
+}
+
+/** Price list shown on the landing page, read from the same rows the chat quotes from. */
+export async function listPublicServiceOptionsWithPrices(): Promise<
+  PublicServicePrice[]
+> {
+  return db
+    .select({
+      id: services.id,
+      category: services.category,
+      name: services.name,
+      priceFrom: services.priceFrom,
+      priceTo: services.priceTo,
+    })
+    .from(services)
+    .where(eq(services.isActive, true))
+    .orderBy(asc(services.category), asc(services.priceFrom));
 }
 
 export async function listPublicDocuments(): Promise<PublicDocument[]> {

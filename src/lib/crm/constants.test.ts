@@ -7,8 +7,6 @@ describe("public workspace access", () => {
     expect(workspaceNavigation.map((item) => item.href)).toEqual([
       "/workspace/leads",
       "/workspace/knowledge",
-      "/workspace/ai-runs",
-      "/workspace/automations",
     ]);
 
     expect(isPublicWorkspacePath("/workspace/leads")).toBe(true);
@@ -20,14 +18,14 @@ describe("public workspace access", () => {
     expect(isPublicWorkspacePath("/account/login")).toBe(false);
   });
 
-  it("keeps technical evidence out of the primary business nav", () => {
-    const byTier = Object.fromEntries(
-      workspaceNavigation.map((item) => [item.href, item.tier]),
-    );
+  it("keeps technical trace pages reachable but out of the main nav", () => {
+    const navHrefs = workspaceNavigation.map((item) => item.href);
 
-    expect(byTier["/workspace/leads"]).toBe("primary");
-    expect(byTier["/workspace/knowledge"]).toBe("primary");
-    expect(byTier["/workspace/ai-runs"]).toBe("secondary");
-    expect(byTier["/workspace/automations"]).toBe("secondary");
+    expect(navHrefs).not.toContain("/workspace/ai-runs");
+    expect(navHrefs).not.toContain("/workspace/automations");
+
+    // Still routable — they are linked from an individual lead instead.
+    expect(isPublicWorkspacePath("/workspace/ai-runs")).toBe(true);
+    expect(isPublicWorkspacePath("/workspace/automations")).toBe(true);
   });
 });

@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "FixFlow AI — AI-диспетчер сервисной компании",
+  title: "FixFlow Service — ремонт техники, сантехника и кондиционеры",
   description:
-    "Публичное портфолио-демо AI-диспетчера и CRM для выездного сервиса.",
+    "Вызов мастера в Киеве: ремонт бытовой техники, сантехнические работы и обслуживание кондиционеров. Запись на выезд онлайн.",
 };
 
 export default function RootLayout({

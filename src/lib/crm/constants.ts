@@ -7,13 +7,10 @@ export const crmCategories = [
 
 export const crmLeadStatuses = [
   "new",
-  "qualifying",
-  "waiting_booking",
   "booked",
   "in_progress",
   "completed",
   "cancelled",
-  "human_required",
 ] as const;
 
 export const crmPriorities = ["low", "normal", "high", "urgent"] as const;
@@ -33,13 +30,10 @@ export const categoryLabels: Record<CrmCategory, string> = {
 
 export const statusLabels: Record<CrmLeadStatus, string> = {
   new: "Новые",
-  qualifying: "Квалификация",
-  waiting_booking: "Ожидают времени",
-  booked: "Записаны",
+  booked: "Запланированы",
   in_progress: "В работе",
-  completed: "Завершены",
+  completed: "Выполнены",
   cancelled: "Отменены",
-  human_required: "Нужен оператор",
 };
 
 export const priorityLabels: Record<CrmPriority, string> = {
@@ -56,16 +50,13 @@ export const sourceLabels: Record<CrmSource, string> = {
 };
 
 /**
- * `primary` items are the day-to-day business surface; `secondary` items are
- * the technical evidence (AI reasoning, webhook/automation logs) — still one
- * click away, but shown de-emphasized so they don't compete with the
- * business nav for attention.
+ * Only the surfaces a dispatcher actually works in. The AI-trace and
+ * automation-log pages still exist and stay linked from a lead's own card,
+ * where that detail is relevant — they are not top-level destinations.
  */
 export const workspaceNavigation = [
-  { href: "/workspace/leads", label: "Заявки", tier: "primary" },
-  { href: "/workspace/knowledge", label: "База знаний", tier: "primary" },
-  { href: "/workspace/ai-runs", label: "AI runs", tier: "secondary" },
-  { href: "/workspace/automations", label: "Автоматизации", tier: "secondary" },
+  { href: "/workspace/leads", label: "Заявки" },
+  { href: "/workspace/knowledge", label: "База знаний" },
 ] as const;
 
 export function isPublicWorkspacePath(pathname: string) {

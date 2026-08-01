@@ -60,7 +60,7 @@ export const databaseScheduledScanStore: ScheduledScanStore = {
       inner join ${customers} as customer
         on customer.id = lead.customer_id
       where lead.is_seed = false
-        and lead.status in ('new', 'qualifying', 'waiting_booking')
+        and lead.status = 'new'
         and lead.created_at <= ${createdBefore}
         and (lead.expires_at is null or lead.expires_at > ${createdBefore})
         and not exists (
