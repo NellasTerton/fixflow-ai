@@ -75,7 +75,7 @@ function sanitizeOutput(
         ? redactPublicText(output.extractedData.problemDescription)
         : null,
       serviceType: output.extractedData.serviceType,
-      name: output.extractedData.name ? "[demo-name-collected]" : null,
+      name: output.extractedData.name ? "[name-collected]" : null,
       phone: output.extractedData.phone ? "[phone-collected]" : null,
       address: output.extractedData.address
         ? "[address-collected]"

@@ -95,7 +95,7 @@ export default async function Home() {
               Мастер приедет тогда, когда вам удобно
             </h1>
             <p className="mt-6 max-w-xl text-pretty text-lg leading-8 text-white/60">
-              Ремонт бытовой техники, сантехника и кондиционеры в Киеве.
+              Ремонт бытовой техники, сантехника и кондиционеры в Москве.
               Опишите проблему в чате — диспетчер подберёт услугу, назовёт цену
               и запишет мастера на свободное время.
             </p>
@@ -110,8 +110,8 @@ export default async function Home() {
                 <dd className="mt-1 text-sm text-white/50">дней гарантии</dd>
               </div>
               <div>
-                <dt className="text-2xl font-semibold text-[#bbf451]">10</dt>
-                <dd className="mt-1 text-sm text-white/50">районов Киева</dd>
+                <dt className="text-2xl font-semibold text-[#bbf451]">12</dt>
+                <dd className="mt-1 text-sm text-white/50">районов Москвы</dd>
               </div>
             </dl>
           </div>
