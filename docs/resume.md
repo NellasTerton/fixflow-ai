@@ -4,7 +4,7 @@
 
 FixFlow AI — AI-диспетчер для сервисных компаний: Next.js, Claude, RAG на
 Neon pgvector, детерминированный конечный автомат поверх LLM, автоматизации
-Make. [Живой продукт](https://fixflow-ai-661.netlify.app) · [GitHub](https://github.com/NellasTerton/fixflow-ai)
+Make. [Живой продукт](https://fixflow-ai-kappa.vercel.app) · [GitHub](https://github.com/NellasTerton/fixflow-ai)
 
 ## Версия для раздела «Проекты»
 

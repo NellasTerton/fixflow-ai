@@ -178,8 +178,6 @@ describe("validated LLM guidance", () => {
           area: "Басманный район",
           preferredDate: "2026-08-01",
         },
-        assistantReply:
-          "В какое время вам было бы удобнее принять мастера?",
       },
     );
 

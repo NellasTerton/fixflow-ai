@@ -137,11 +137,6 @@ export interface ChatWorkflowStore {
 
 export interface ChatStartGuidance {
   collectedData?: Partial<ChatCollectedData>;
-  assistantReply?: string;
-}
-
-export interface ChatTurnGuidance {
-  assistantReply?: string;
 }
 
 export interface ChatExtractionHints {
@@ -166,14 +161,7 @@ export async function startChatWorkflow(
     ...guidance.collectedData,
   };
   const next = await determineNextPrompt(store, data);
-  // "show_services" also benefits from the LLM's own reply — it already
-  // classified the problem, so its transition line ("Похоже, нужна помощь
-  // со стиральной машиной — уточните...") is more useful than the flat
-  // fallback below, which has no idea what the customer actually said.
-  const reply =
-    next.action === "ask_question" || next.action === "show_services"
-      ? naturalQuestion(next.reply, guidance.assistantReply)
-      : next.reply;
+  const reply = next.reply;
 
   await store.startConversation({
     conversationId,
@@ -199,7 +187,6 @@ export async function continueChatWorkflow(
   conversationId: string,
   message: string,
   now = new Date(),
-  guidance: ChatTurnGuidance = {},
 ): Promise<ChatResponse> {
   const conversation = await store.loadConversation(conversationId);
 
@@ -249,14 +236,7 @@ export async function continueChatWorkflow(
     case "category":
       return handleCategory(store, conversation, data, message, now);
     case "service":
-      return handleService(
-        store,
-        conversation,
-        data,
-        message,
-        now,
-        guidance.assistantReply,
-      );
+      return handleService(store, conversation, data, message, now);
     case "name":
       return handleTextStep(
         store,
@@ -267,10 +247,7 @@ export async function continueChatWorkflow(
         nameSchema,
         "demoName",
         "phone",
-        naturalQuestion(
-          "Укажите безопасный телефон, например +7 000 000 1042.",
-          guidance.assistantReply,
-        ),
+        "Укажите безопасный телефон, например +7 000 000 1042.",
       );
     case "phone":
       return handleTextStep(
@@ -282,10 +259,7 @@ export async function continueChatWorkflow(
         phoneSchema,
         "phone",
         "area",
-        naturalQuestion(
-          "Укажите район или общий адрес без номера дома и квартиры.",
-          guidance.assistantReply,
-        ),
+        "Укажите район или общий адрес без номера дома и квартиры.",
       );
     case "area":
       return handleTextStep(
@@ -297,20 +271,10 @@ export async function continueChatWorkflow(
         areaSchema,
         "area",
         "preferred_date",
-        naturalQuestion(
-          "На какую дату нужен выезд?",
-          guidance.assistantReply,
-        ),
+        "На какую дату нужен выезд?",
       );
     case "preferred_date":
-      return handlePreferredDate(
-        store,
-        conversation,
-        data,
-        message,
-        now,
-        guidance.assistantReply,
-      );
+      return handlePreferredDate(store, conversation, data, message, now);
     case "preferred_time":
       return handlePreferredTime(store, conversation, data, message, now);
     case "slot":
@@ -382,7 +346,6 @@ async function handleService(
   data: ChatCollectedData,
   message: string,
   now: Date,
-  assistantReply?: string,
 ) {
   if (!data.category) {
     return response(
@@ -415,7 +378,7 @@ async function handleService(
     serviceId: selected.id,
     serviceType: selected.name,
   };
-  const reply = naturalQuestion("Как к вам обращаться?", assistantReply);
+  const reply = "Как к вам обращаться?";
 
   await store.saveTurn({
     conversationId: conversation.id,
@@ -477,7 +440,6 @@ async function handlePreferredDate(
   data: ChatCollectedData,
   message: string,
   now: Date,
-  assistantReply?: string,
 ) {
   const parsed = preferredDateSchema(now).safeParse(message);
 
@@ -495,10 +457,7 @@ async function handlePreferredDate(
   }
 
   const nextData = { ...data, preferredDate: parsed.data };
-  const reply = naturalQuestion(
-    "Какое время было бы удобнее? Укажите его в формате ЧЧ:ММ.",
-    assistantReply,
-  );
+  const reply = "Какое время было бы удобнее? Укажите его в формате ЧЧ:ММ.";
 
   await store.saveTurn({
     conversationId: conversation.id,
@@ -854,21 +813,6 @@ function askPrompt(step: ChatStep, reply: string) {
     reply,
     options: [] as ChatOption[],
   };
-}
-
-function naturalQuestion(fallback: string, proposed?: string) {
-  const value = proposed?.trim();
-
-  if (
-    !value ||
-    value.length > 500 ||
-    !value.includes("?") ||
-    /https?:\/\/|www\./iu.test(value)
-  ) {
-    return fallback;
-  }
-
-  return value;
 }
 
 function normalizeText(value: string) {

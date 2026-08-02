@@ -2,7 +2,7 @@
 
 **AI-диспетчер и операционная система для выездных сервисных компаний.**
 
-🔗 **Живой продукт:** [fixflow-ai-661.netlify.app](https://fixflow-ai-661.netlify.app)
+🔗 **Живой продукт:** [fixflow-ai-kappa.vercel.app](https://fixflow-ai-kappa.vercel.app)
 
 Клиент пишет в чат, что сломалось → AI определяет направление и услугу →
 отвечает по базе знаний компании через RAG → собирает контакты → предлагает
@@ -15,12 +15,12 @@ _Главная страница с встроенным чатом-диспет
 
 ## Попробовать за 2 минуты
 
-1. Откройте [чат](https://fixflow-ai-661.netlify.app/chat) и опишите проблему
+1. Откройте [чат](https://fixflow-ai-kappa.vercel.app/chat) и опишите проблему
    своими словами — например, «не работает стиральная машина, не сливает
    воду».
 2. Ответьте на пару вопросов: имя, тестовый телефон вида `+7 000 000 1042`,
    район Москвы, дату и время выезда.
-3. Заявка сразу появится в [рабочем пространстве](https://fixflow-ai-661.netlify.app/workspace/leads).
+3. Заявка сразу появится в [рабочем пространстве](https://fixflow-ai-kappa.vercel.app/workspace/leads).
    Откройте её — раздел «Почему AI так ответил?» показывает источники RAG, а
    `/workspace/automations` — журнал webhook-событий Make.
 
@@ -109,9 +109,9 @@ flowchart LR
 
 ## Для технического ревью
 
-- [`/workspace/ai-runs`](https://fixflow-ai-661.netlify.app/workspace/ai-runs) —
+- [`/workspace/ai-runs`](https://fixflow-ai-kappa.vercel.app/workspace/ai-runs) —
   каждый вызов LLM: вход, confidence, найденные RAG-чанки, длительность.
-- [`/workspace/automations`](https://fixflow-ai-661.netlify.app/workspace/automations) —
+- [`/workspace/automations`](https://fixflow-ai-kappa.vercel.app/workspace/automations) —
   webhook-события и callback от сценариев Make, статус доставки.
 - `docs/decisions.md` — например, почему `expires_at` на пользовательских
   заявках проверялся только при записи, но не при чтении (найдено и

@@ -5,7 +5,7 @@
 
 ## `homepage.png`
 
-`https://fixflow-ai-661.netlify.app/`
+`https://fixflow-ai-kappa.vercel.app/`
 
 Верхняя часть страницы (hero): заголовок «Мастер приедет тогда, когда вам
 удобно», три цифры (12/90/12), встроенный чат-виджет справа. Перед снимком
@@ -15,7 +15,7 @@
 
 ## `chat.png`
 
-`https://fixflow-ai-661.netlify.app/chat`
+`https://fixflow-ai-kappa.vercel.app/chat`
 
 Пройти чат до шага с кнопками выбора услуги или до финального экрана
 «Заявка FF-XXXX создана» — важно показать структурированный ответ (кнопки
@@ -23,14 +23,14 @@
 
 ## `workspace.png`
 
-`https://fixflow-ai-661.netlify.app/workspace/leads`
+`https://fixflow-ai-kappa.vercel.app/workspace/leads`
 
 Полная Kanban-доска: видно несколько колонок (Новые / Запланированы / В
 работе / Выполнены) с карточками — имя клиента, район, цена.
 
 ## `lead-detail.png`
 
-`https://fixflow-ai-661.netlify.app/workspace/leads/<id>` — id любой заявки
+`https://fixflow-ai-kappa.vercel.app/workspace/leads/<id>` — id любой заявки
 из списка `/api/workspace/leads`, лучше с непустым разделом AI runs.
 
 Прокрутить до блока «Почему AI так ответил?» — важно, чтобы был виден хотя

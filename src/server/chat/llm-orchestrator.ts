@@ -104,10 +104,7 @@ export async function startChatWithLlm(
     databaseChatStore,
     message,
     new Date(),
-    {
-      collectedData,
-      assistantReply: approvedNaturalReply(result),
-    },
+    { collectedData },
   );
 
   await safelySaveRun({
@@ -190,7 +187,6 @@ export async function continueChatWithLlm(
     conversationId,
     message,
     new Date(),
-    { assistantReply: approvedNaturalReply(result) },
   );
 
   await safelySaveRun({
@@ -269,15 +265,6 @@ async function analyze(input: {
         "Extract explicit values and phrase only the next missing question. Return JSON only.",
     }),
   });
-}
-
-function approvedNaturalReply(result: LlmAnalysisResult) {
-  const passesThrough =
-    result.status === "success" &&
-    (result.output.proposedAction === "ask_question" ||
-      result.output.proposedAction === "show_services");
-
-  return passesThrough ? result.output.reply : undefined;
 }
 
 function getMissingFieldNames(

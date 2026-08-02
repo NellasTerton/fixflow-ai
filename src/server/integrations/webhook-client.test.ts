@@ -13,7 +13,7 @@ const envelope: AutomationWebhookEnvelope = {
   entityId: "20000000-0000-4000-8000-000000000001",
   occurredAt: "2026-07-30T12:00:00.000Z",
   callbackUrl:
-    "https://fixflow-ai-661.netlify.app/api/integrations/make/callback",
+    "https://fixflow-ai-kappa.vercel.app/api/integrations/make/callback",
   urgency: "normal",
   telegramMessage: "Demo notification",
   payload: { publicNumber: "FF-1042" },

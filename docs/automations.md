@@ -28,7 +28,7 @@ Custom Webhook в Make. Конверт запроса одинаков для в
   "entityType": "lead",
   "entityId": "uuid",
   "occurredAt": "2026-07-31T09:00:00.000Z",
-  "callbackUrl": "https://fixflow-ai-661.netlify.app/api/integrations/make/callback",
+  "callbackUrl": "https://fixflow-ai-kappa.vercel.app/api/integrations/make/callback",
   "urgency": "normal",
   "telegramMessage": "готовый текст сообщения",
   "payload": { "publicNumber": "FF-1047" }
@@ -133,7 +133,7 @@ Placeholder не выполняется, поэтому его фильтр ни
 - Триггер: `Schedule` — каждые 15 минут.
 - Модуль: `HTTP → Make a request`.
 - Метод: `POST`.
-- URL: `https://fixflow-ai-661.netlify.app/api/integrations/automation/scan`.
+- URL: `https://fixflow-ai-kappa.vercel.app/api/integrations/automation/scan`.
 - Заголовок: `x-fixflow-automation-secret: <AUTOMATION_CALLBACK_SECRET>`.
 - Тело (`application/json`), необязательное:
 
