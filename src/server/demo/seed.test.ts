@@ -60,7 +60,7 @@ describe("FixFlow Service demo seed", () => {
     const counts = await applyDemoSeed(store, now);
 
     expect(counts).toEqual({
-      services: 13,
+      services: 16,
       customers: 12,
       leads: 18,
       availabilitySlots: 20,
@@ -129,7 +129,7 @@ describe("FixFlow Service demo seed", () => {
 
     expect(idsAfterSecondRun).toEqual(idsAfterFirstRun);
     expect(Object.values(records).map((collection) => collection.size)).toEqual([
-      13, 12, 18, 20, 6,
+      16, 12, 18, 20, 6,
     ]);
   });
 });

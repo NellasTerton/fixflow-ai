@@ -200,6 +200,47 @@ const serviceRecords: DemoServiceSeed[] = [
     isActive: true,
     isSeed: true,
   },
+  // Per-category call-out: the honest fallback when the request doesn't map to
+  // a specific catalog line (unusual job, several jobs at once, or the client
+  // isn't sure). A master diagnoses on site and the dispatcher scopes the real
+  // work — so a lead is always created instead of trapping the client on a
+  // button list that never has exactly what they need.
+  {
+    id: demoId(1, 14),
+    category: "appliance_repair",
+    name: "Выезд и диагностика",
+    description:
+      "Мастер приезжает, определяет причину и называет точную стоимость на месте. Подходит, если проблема не из списка или их несколько.",
+    priceFrom: 50_000,
+    priceTo: 90_000,
+    durationMinutes: 45,
+    isActive: true,
+    isSeed: true,
+  },
+  {
+    id: demoId(1, 15),
+    category: "plumbing",
+    name: "Выезд и диагностика",
+    description:
+      "Мастер приезжает, определяет причину и называет точную стоимость на месте. Подходит, если проблема не из списка или их несколько.",
+    priceFrom: 50_000,
+    priceTo: 90_000,
+    durationMinutes: 45,
+    isActive: true,
+    isSeed: true,
+  },
+  {
+    id: demoId(1, 16),
+    category: "air_conditioning",
+    name: "Выезд и диагностика",
+    description:
+      "Мастер приезжает, определяет причину и называет точную стоимость на месте. Подходит, если проблема не из списка или их несколько.",
+    priceFrom: 50_000,
+    priceTo: 90_000,
+    durationMinutes: 45,
+    isActive: true,
+    isSeed: true,
+  },
 ];
 
 interface CustomerBlueprint {

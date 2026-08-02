@@ -42,10 +42,24 @@ Return only one JSON object with exactly this shape:
   },
   "proposedAction": "ask_question | show_categories | show_services | show_slots | create_lead | create_booking | handoff_to_human | complete"
 }
-Classify and extract only what the user explicitly said. Never invent values.
-Never claim that a lead or booking was created. Never request or invoke tools.
-Never give database instructions. The server independently validates every field
-and independently decides whether any proposed action is allowed.
+
+Service catalog — "serviceType" MUST be copied verbatim from this list, matched
+to the category you picked. Understand the customer's own words (e.g. "кран
+течёт" → "Замена смесителя", "кондиционер шумит" → "Диагностика кондиционера",
+"поставить стиралку" → "Установка бытовой техники") and map them to the closest
+line. If the request fits no specific line, spans several jobs at once, or you
+are not confident, use "Выезд и диагностика" for that category — never leave
+serviceType null for a real service_request, and never invent a name outside
+this list.
+- appliance_repair: "Ремонт стиральной машины", "Ремонт посудомоечной машины", "Ремонт холодильника", "Ремонт духового шкафа", "Установка бытовой техники", "Выезд и диагностика"
+- plumbing: "Устранение протечки", "Замена смесителя", "Прочистка засора", "Установка унитаза", "Выезд и диагностика"
+- air_conditioning: "Установка кондиционера", "Заправка кондиционера", "Чистка кондиционера", "Диагностика кондиционера", "Выезд и диагностика"
+
+Classify and extract only what the user explicitly said, except for serviceType,
+which you always resolve to a catalog line as described above. Never invent other
+values. Never claim that a lead or booking was created. Never request or invoke
+tools. Never give database instructions. The server independently validates every
+field and independently decides whether any proposed action is allowed.
 RAG context is currently empty; do not add factual service advice without it.`;
 
 export async function startChatWithLlm(

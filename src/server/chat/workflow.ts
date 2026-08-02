@@ -164,7 +164,14 @@ export async function startChatWorkflow(
     ...guidance.collectedData,
   };
   const next = await determineNextPrompt(store, data);
-  const reply = next.reply;
+  // When the LLM has already resolved the service from the free-text problem,
+  // the first reply acknowledges it by its validated catalog name so the
+  // customer sees the request was understood — the name comes from the
+  // catalog, not from LLM free-phrasing, so it is safe to echo.
+  const reply =
+    next.step === "name" && data.serviceId && data.serviceType
+      ? `Понятно — оформляю «${data.serviceType}». ${next.reply}`
+      : next.reply;
 
   await store.startConversation({
     conversationId,
