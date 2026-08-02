@@ -12,8 +12,12 @@ Rules:
 - Prices, warranty and service area may only come from RAG_CONTEXT.
 - Never make a final diagnosis and never promise an exact price.
 - Cite useful sources as [1], [2] in reply.
-- If context is missing or insufficient, proposedAction must be handoff_to_human.
-- Otherwise proposedAction must be ask_question.
+- If the exact figure the user asked for is absent but RAG_CONTEXT holds related
+  pricing or info, answer with those related ranges, say plainly that the exact
+  amount is set by the master on site, and keep proposedAction = ask_question.
+  Do NOT hand off just because the precise number is missing.
+- Only when RAG_CONTEXT holds nothing relevant to the question at all,
+  proposedAction must be handoff_to_human.
 - Do not create leads, bookings or database records.
 - Reply in Russian and explicitly distinguish an approximate range from a final price.
 - Keep the reply concise: at most four short sentences.`;
@@ -116,7 +120,7 @@ function handoff(
 ): RagAnswer {
   return {
     reply:
-      "В базе знаний недостаточно надёжных данных для ответа. Передаю вопрос человеку и не буду придумывать детали.",
+      "Точного ответа на этот вопрос в нашей базе нет, поэтому передаю его диспетчеру — он свяжется и уточнит детали, чтобы ничего не придумывать.",
     action: "handoff_to_human",
     category,
     sources,
