@@ -4,6 +4,7 @@ import type { NeonHttpDatabase } from "drizzle-orm/neon-http";
 import * as schema from "../db/schema";
 import {
   availabilitySlots,
+  bookings,
   customers,
   leads,
   services,
@@ -19,6 +20,12 @@ import {
 } from "./data";
 
 export interface DemoSeedStore {
+  // Bookings are runtime artifacts (created by the chat/booking flow), not
+  // seed rows. Re-seeding resets every slot back to "available", so any
+  // booking left behind would point at a now-free slot and collide with the
+  // unique constraint on slot_id the next time that slot is booked. Clearing
+  // bookings first keeps the demo in a consistently bookable state.
+  clearBookings(): Promise<void>;
   upsertServices(records: DemoServiceSeed[]): Promise<void>;
   upsertCustomers(records: DemoCustomerSeed[]): Promise<void>;
   upsertLeads(records: DemoLeadSeed[]): Promise<void>;
@@ -47,6 +54,9 @@ export function createDrizzleDemoSeedStore(
   database: NeonHttpDatabase<typeof schema>,
 ): ResettableDemoSeedStore {
   return {
+    async clearBookings() {
+      await database.delete(bookings);
+    },
     async upsertServices(records) {
       await database
         .insert(services)
@@ -142,6 +152,10 @@ export function createDrizzleDemoSeedStore(
         });
     },
     async clearSeedData() {
+      // Bookings reference both leads and availability slots, so they must go
+      // first or those deletes fail on the foreign keys (this is what made
+      // demo:reset error out before).
+      await database.delete(bookings);
       await database.delete(tasks).where(eq(tasks.isSeed, true));
       await database.delete(leads).where(eq(leads.isSeed, true));
       await database
@@ -159,6 +173,9 @@ export async function applyDemoSeed(
 ): Promise<DemoSeedCounts> {
   const data = createDemoSeedData(now);
 
+  // Clear runtime bookings before slots are reset to "available" so freed
+  // slots never keep a stale booking (see DemoSeedStore.clearBookings).
+  await store.clearBookings();
   await store.upsertServices(data.services);
   await store.upsertCustomers(data.customers);
   await store.upsertLeads(data.leads);

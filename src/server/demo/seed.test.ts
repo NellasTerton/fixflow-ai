@@ -32,6 +32,10 @@ function createMemoryStore() {
   };
 
   const store: DemoSeedStore = {
+    async clearBookings() {
+      // The in-memory store never tracks bookings, so there is nothing to
+      // clear — the drizzle store is where this actually deletes rows.
+    },
     async upsertServices(values) {
       upsert(records.services, values);
     },
