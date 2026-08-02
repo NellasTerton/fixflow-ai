@@ -272,10 +272,12 @@ async function analyze(input: {
 }
 
 function approvedNaturalReply(result: LlmAnalysisResult) {
-  return result.status === "success" &&
-    result.output.proposedAction === "ask_question"
-    ? result.output.reply
-    : undefined;
+  const passesThrough =
+    result.status === "success" &&
+    (result.output.proposedAction === "ask_question" ||
+      result.output.proposedAction === "show_services");
+
+  return passesThrough ? result.output.reply : undefined;
 }
 
 function getMissingFieldNames(
