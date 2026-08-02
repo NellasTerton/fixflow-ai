@@ -166,8 +166,12 @@ export async function startChatWorkflow(
     ...guidance.collectedData,
   };
   const next = await determineNextPrompt(store, data);
+  // "show_services" also benefits from the LLM's own reply — it already
+  // classified the problem, so its transition line ("Похоже, нужна помощь
+  // со стиральной машиной — уточните...") is more useful than the flat
+  // fallback below, which has no idea what the customer actually said.
   const reply =
-    next.action === "ask_question"
+    next.action === "ask_question" || next.action === "show_services"
       ? naturalQuestion(next.reply, guidance.assistantReply)
       : next.reply;
 
@@ -411,10 +415,7 @@ async function handleService(
     serviceId: selected.id,
     serviceType: selected.name,
   };
-  const reply = naturalQuestion(
-    "Как к вам обращаться? Используйте вымышленное имя.",
-    assistantReply,
-  );
+  const reply = naturalQuestion("Как к вам обращаться?", assistantReply);
 
   await store.saveTurn({
     conversationId: conversation.id,
@@ -819,10 +820,7 @@ async function determineNextPrompt(
   }
 
   if (!data.demoName) {
-    return askPrompt(
-      "name",
-      "Как к вам обращаться? Используйте вымышленное имя.",
-    );
+    return askPrompt("name", "Как к вам обращаться?");
   }
 
   if (!data.phone) {

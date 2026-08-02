@@ -186,6 +186,20 @@ const serviceRecords: DemoServiceSeed[] = [
     isActive: true,
     isSeed: true,
   },
+  {
+    // Appended, not inserted — leadBlueprints reference services by array
+    // index, so a new row must go last to avoid shifting every later index.
+    id: demoId(1, 13),
+    category: "appliance_repair",
+    name: "Установка бытовой техники",
+    description:
+      "Подключение и выравнивание стиральной, посудомоечной машины или духового шкафа после покупки.",
+    priceFrom: 150_000,
+    priceTo: 400_000,
+    durationMinutes: 60,
+    isActive: true,
+    isSeed: true,
+  },
 ];
 
 interface CustomerBlueprint {

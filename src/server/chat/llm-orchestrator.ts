@@ -25,7 +25,7 @@ import {
   validateChatExtraction,
 } from "./workflow";
 
-const SYSTEM_PROMPT = `You are the constrained language layer for FixFlow AI, a public fictional field-service demo.
+const SYSTEM_PROMPT = `You are the constrained language layer for FixFlow Service, an AI dispatcher for a field-service company in Moscow (appliance repair, plumbing, air conditioning).
 Return only one JSON object with exactly this shape:
 {
   "reply": "one short natural Russian question",
