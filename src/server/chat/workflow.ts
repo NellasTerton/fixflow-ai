@@ -14,7 +14,10 @@ import {
   categoryLabels,
   type CrmCategory,
 } from "../../lib/crm/constants";
-import { normalizePhone } from "../../lib/request/schema";
+import {
+  normalizePhone,
+  RUSSIAN_PHONE_PATTERN,
+} from "../../lib/request/schema";
 
 const CHAT_CATEGORIES = [
   "appliance_repair",
@@ -33,8 +36,8 @@ const phoneSchema = z
   .max(30, "Телефон слишком длинный")
   .transform(normalizePhone)
   .refine(
-    (value) => /^\+7000\d{7}$/.test(value),
-    "Используйте безопасный тестовый номер вида +7 000 000 1042",
+    (value) => RUSSIAN_PHONE_PATTERN.test(value),
+    "Укажите номер телефона в формате +7 985 123 45 67",
   );
 const areaSchema = z
   .string()
@@ -247,7 +250,7 @@ export async function continueChatWorkflow(
         nameSchema,
         "demoName",
         "phone",
-        "Укажите безопасный телефон, например +7 000 000 1042.",
+        "Укажите номер телефона, например +7 985 123 45 67.",
       );
     case "phone":
       return handleTextStep(
@@ -917,7 +920,7 @@ const completeLeadDataSchema = z.object({
   serviceId: z.uuid(),
   serviceType: z.string().min(1).max(160),
   demoName: z.string().min(2).max(60),
-  phone: z.string().regex(/^\+7000\d{7}$/),
+  phone: z.string().regex(RUSSIAN_PHONE_PATTERN),
   area: z.string().min(2).max(120),
   preferredDate: z.string().date(),
   preferredTime: z.string().regex(/^\d{2}:\d{2}$/),

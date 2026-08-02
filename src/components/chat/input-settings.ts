@@ -46,7 +46,7 @@ export function inputSettings(field: ChatField): ChatInputSettings {
         ...common,
         label: "Телефон",
         type: "tel",
-        placeholder: "+7 000 000 1042",
+        placeholder: "+7 985 123 45 67",
         maxLength: 30,
       };
     case "area":

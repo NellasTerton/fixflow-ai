@@ -2,20 +2,26 @@ import { z } from "zod";
 
 import { crmCategories } from "../crm/constants";
 
-// "000" is not an assignable Russian operator code, so no number matching
-// this pattern can ever reach a real subscriber.
-const DEMO_PHONE_PATTERN = /^\+7000\d{7}$/;
+// A well-formed Russian number after normalisation: +7 followed by ten
+// digits. We normalise a leading 8 and bare ten-digit locals to this shape.
+export const RUSSIAN_PHONE_PATTERN = /^\+7\d{10}$/;
 const EXACT_ADDRESS_PATTERN =
   /(?:(?:кв(?:артира)?|дом|будинок)|\b\d{1,4}[/-]\d{1,4}\b)/iu;
 
 export function normalizePhone(value: string) {
   const digits = value.replace(/\D/g, "");
 
+  // 8 (985) 123-45-67 — the domestic trunk prefix maps to +7.
+  if (digits.length === 11 && digits.startsWith("8")) {
+    return `+7${digits.slice(1)}`;
+  }
+
   if (digits.startsWith("7")) {
     return `+${digits}`;
   }
 
-  if (digits.startsWith("000")) {
+  // A bare ten-digit local number is assumed to be Russian.
+  if (digits.length === 10) {
     return `+7${digits}`;
   }
 
@@ -41,8 +47,8 @@ export function createPublicRequestSchema(now = new Date()) {
       .max(30, "Телефон слишком длинный")
       .transform(normalizePhone)
       .refine(
-        (value) => DEMO_PHONE_PATTERN.test(value),
-        "Используйте безопасный тестовый номер вида +7 000 000 1042",
+        (value) => RUSSIAN_PHONE_PATTERN.test(value),
+        "Укажите номер телефона в формате +7 985 123 45 67",
       ),
     category: z.enum(crmCategories, {
       error: "Выберите категорию",

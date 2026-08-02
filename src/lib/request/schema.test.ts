@@ -17,18 +17,24 @@ const validRequest = {
 };
 
 describe("public request validation", () => {
-  it("normalizes and accepts only a safe demo phone", () => {
+  it("normalizes several Russian phone formats", () => {
     expect(normalizePhone("+7 (000) 000-1042")).toBe("+70000001042");
+    expect(normalizePhone("8 985 127 52 55")).toBe("+79851275255");
+    expect(normalizePhone("+7 916 123 45 67")).toBe("+79161234567");
+    expect(normalizePhone("9161234567")).toBe("+79161234567");
 
-    const result = createPublicRequestSchema(now).parse(validRequest);
-
-    expect(result.phone).toBe("+70000001042");
-  });
-
-  it("rejects real-looking phones and exact apartment addresses", () => {
-    const result = createPublicRequestSchema(now).safeParse({
+    const result = createPublicRequestSchema(now).parse({
       ...validRequest,
       phone: "+7 916 123 45 67",
+    });
+
+    expect(result.phone).toBe("+79161234567");
+  });
+
+  it("rejects malformed phones and exact apartment addresses", () => {
+    const result = createPublicRequestSchema(now).safeParse({
+      ...validRequest,
+      phone: "12345",
       area: "улица Тестовая, дом 42, квартира 7",
     });
 

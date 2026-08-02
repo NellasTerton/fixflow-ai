@@ -65,8 +65,8 @@ export function RequestForm({
               персональные данные
             </p>
             <p className="mt-1 text-amber-800/80">
-              Используйте вымышленное имя, безопасный тестовый телефон и
-              только название района — без дома и квартиры.
+              Заявки из этой формы попадают в публичную базу — укажите только
+              название района, без дома и квартиры.
             </p>
           </div>
         </div>
@@ -93,7 +93,6 @@ export function RequestForm({
         <Field
           label="Телефон"
           name="phone"
-          hint="Нерабочий код 000 защищает от случайного реального номера"
           error={state.errors?.phone?.[0]}
         >
           <input
@@ -104,7 +103,7 @@ export function RequestForm({
             maxLength={30}
             autoComplete="off"
             inputMode="tel"
-            placeholder="+7 000 000 1042"
+            placeholder="+7 985 123 45 67"
             className={inputClass}
           />
         </Field>
