@@ -11,7 +11,11 @@ export const llmIntentValues = [
 ] as const;
 
 export const llmStructuredOutputSchema = z.strictObject({
-  reply: z.string().trim().min(1).max(600),
+  // Chat classification replies are short (and no longer shown to the user —
+  // see D-025), but a grounded RAG consultation answer legitimately runs to a
+  // few sentences with a price range and caveats. 600 chopped valid answers
+  // and forced a false "недостаточно данных" handoff, so the cap is generous.
+  reply: z.string().trim().min(1).max(1200),
   intent: z.enum(llmIntentValues),
   category: z.enum(crmCategories).nullable(),
   confidence: z.number().min(0).max(1),

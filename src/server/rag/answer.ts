@@ -15,7 +15,8 @@ Rules:
 - If context is missing or insufficient, proposedAction must be handoff_to_human.
 - Otherwise proposedAction must be ask_question.
 - Do not create leads, bookings or database records.
-- Reply in Russian and explicitly distinguish an approximate range from a final price.`;
+- Reply in Russian and explicitly distinguish an approximate range from a final price.
+- Keep the reply concise: at most four short sentences.`;
 
 export type KnowledgeRetriever = (
   question: string,

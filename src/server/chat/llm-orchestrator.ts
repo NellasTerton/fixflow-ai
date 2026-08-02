@@ -9,7 +9,10 @@ import type {
 } from "../../lib/chat/contracts";
 import { createAnthropicProvider } from "../llm/anthropic-provider";
 import { saveChatAiRun, saveRagAiRun } from "../llm/ai-run-store";
-import type { LlmAnalysisResult } from "../llm/contracts";
+import type {
+  LlmAnalysisResult,
+  LlmStructuredOutput,
+} from "../llm/contracts";
 import {
   runLlmAnalysis,
   unconfiguredLlmResult,
@@ -85,7 +88,7 @@ export async function startChatWithLlm(
     const answer = await answerWithRag({
       question: message,
       modelCategory:
-        result.status === "success" ? result.output.category : null,
+        usableClassification(result)?.category ?? null,
       provider,
       retrieve: retrieveKnowledge,
     });
@@ -101,16 +104,22 @@ export async function startChatWithLlm(
     return response;
   }
 
-  const canUseOutput =
-    result.status === "success" &&
-    result.output.intent === "service_request";
+  // Use the classification for routing even when the model self-reported low
+  // confidence. On short or slang inputs ("не работает кондей") the model
+  // still gets category + service right but scores itself ~0.6, and the 0.7
+  // gate was throwing that away — dropping the customer onto the category
+  // button wall. The deterministic catalog match in validateChatExtraction is
+  // the real safety net: a bad guess simply fails to match and falls back to
+  // buttons, no worse than before.
+  const classification = usableClassification(result);
+  const canUseOutput = classification?.intent === "service_request";
   const collectedData = canUseOutput
     ? await validateChatExtraction(
         databaseChatStore,
         message,
         {
-          ...result.output.extractedData,
-          category: result.output.category,
+          ...classification.extractedData,
+          category: classification.category,
         },
       )
     : undefined;
@@ -163,7 +172,7 @@ export async function continueChatWithLlm(
     const answer = await answerWithRag({
       question: message,
       modelCategory:
-        result.status === "success" ? result.output.category : null,
+        usableClassification(result)?.category ?? null,
       provider,
       retrieve: retrieveKnowledge,
     });
@@ -279,6 +288,27 @@ async function analyze(input: {
         "Extract explicit values and phrase only the next missing question. Return JSON only.",
     }),
   });
+}
+
+/**
+ * The model's structured output when it is safe to route on, treating a
+ * low-confidence result as usable — the deterministic layer re-validates every
+ * field, so a shaky classification degrades gracefully rather than being
+ * discarded. Genuinely broken results (bad JSON, timeout, wrong schema) still
+ * return null and fall back to the button flow.
+ */
+function usableClassification(
+  result: LlmAnalysisResult,
+): LlmStructuredOutput | null {
+  if (result.status === "success") {
+    return result.output;
+  }
+
+  if (result.error === "low_confidence" && result.output) {
+    return result.output;
+  }
+
+  return null;
 }
 
 function getMissingFieldNames(
