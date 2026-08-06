@@ -95,7 +95,11 @@ export async function startChatWithLlm(
       provider,
       retrieve: retrieveKnowledge,
     });
-    const response = await startKnowledgeConversation(message, answer);
+    const response = await startKnowledgeConversation(
+      message,
+      answer,
+      usableClassification(result),
+    );
 
     await safelySaveRun({
       conversationId: response.conversationId,
@@ -258,9 +262,21 @@ export async function continueChatWithLlm(
 async function startKnowledgeConversation(
   question: string,
   answer: RagAnswer,
+  classification: LlmStructuredOutput | null,
 ): Promise<ChatResponse> {
   const conversationId = randomUUID();
-  const data: ChatCollectedData = { problemDescription: question };
+  // Seed category/service from the same classification the non-RAG path
+  // already uses (validateChatExtraction) — otherwise a question like
+  // "сколько стоит установка кондиционера?" answers the price but then
+  // re-asks "к какому направлению это относится" even though the customer
+  // just said it. Deterministically re-validated against the real catalog,
+  // same as every other use of this classification.
+  const data: ChatCollectedData = classification
+    ? await validateChatExtraction(databaseChatStore, question, {
+        ...classification.extractedData,
+        category: classification.category,
+      })
+    : { problemDescription: question };
 
   // Only a genuinely answered question gets the FSM's real next prompt
   // attached — a handoff already tells the customer a human is taking over,

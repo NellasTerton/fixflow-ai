@@ -107,15 +107,11 @@ describe.each(scenarios)(
         "Клиент Демонстрационный",
         phone,
         "Тверской район",
-        "2026-08-01",
-        "12:00",
       ];
       const expectedRemovedFields = [
         "demoName",
         "phone",
         "area",
-        "preferredDate",
-        "preferredTime",
       ] as const;
 
       let response = serviceResponse;
@@ -130,6 +126,28 @@ describe.each(scenarios)(
           expectedRemovedFields[index],
         );
       }
+
+      // The fulfillment branch point — choosing self-service continues to
+      // date/time exactly as the pipeline always has.
+      expect(response.reply).toContain("оператор");
+      response = await continueChatWorkflow(
+        store,
+        start.conversationId,
+        "сам назначу время",
+        NOW,
+      );
+      expect(response.reply).toContain("дату");
+
+      for (const answer of ["2026-08-01", "12:00"]) {
+        response = await continueChatWorkflow(
+          store,
+          start.conversationId,
+          answer,
+          NOW,
+        );
+      }
+      expect(response.missingFields).not.toContain("preferredDate");
+      expect(response.missingFields).not.toContain("preferredTime");
 
       // Propose/confirm instead of a slot grid: the lead is created with the
       // closest real slot already proposed in prose, no options attached.
@@ -155,7 +173,7 @@ describe.each(scenarios)(
       expect(completed.collectedData.bookingId).toBeDefined();
       expect(store.leads[0]?.status).toBe("booked");
       expect(store.bookings).toHaveLength(1);
-      expect(store.messages).toHaveLength(18);
+      expect(store.messages).toHaveLength(20);
 
       const stored = await store.loadConversation(start.conversationId);
       expect(stored).toMatchObject({
@@ -165,6 +183,64 @@ describe.each(scenarios)(
     });
   },
 );
+
+describe("operator callback", () => {
+  it("creates a lead with no date/time and hands off, without a second lead on a stray reply", async () => {
+    const service = scenarios[0].service;
+    const store = new InMemoryChatStore([service], []);
+
+    const start = await startChatWorkflow(store, scenarios[0].problem, NOW);
+    await continueChatWorkflow(
+      store,
+      start.conversationId,
+      categoryFreeTextAnswers[scenarios[0].category],
+      NOW,
+    );
+    await continueChatWorkflow(store, start.conversationId, service.name, NOW);
+    await continueChatWorkflow(store, start.conversationId, "Клиент", NOW);
+    await continueChatWorkflow(
+      store,
+      start.conversationId,
+      scenarios[0].phone,
+      NOW,
+    );
+    await continueChatWorkflow(
+      store,
+      start.conversationId,
+      "Тверской район",
+      NOW,
+    );
+
+    const callback = await continueChatWorkflow(
+      store,
+      start.conversationId,
+      "пусть лучше оператор перезвонит",
+      NOW,
+    );
+
+    expect(callback.action).toBe("handoff_to_human");
+    expect(callback.reply).toContain("Оператор перезвонит");
+    expect(callback.collectedData.publicNumber).toMatch(/^FF-\d+$/);
+    expect(callback.collectedData.preferredDate).toBeUndefined();
+    expect(callback.collectedData.preferredTime).toBeUndefined();
+    expect(store.leads).toHaveLength(1);
+    expect(store.leads[0]).toMatchObject({ needsOperator: true });
+
+    const stored = await store.loadConversation(start.conversationId);
+    expect(stored?.status).toBe("human_required");
+
+    // A stray message afterward must not create a second lead — the
+    // conversation is already terminal.
+    const stray = await continueChatWorkflow(
+      store,
+      start.conversationId,
+      "алло?",
+      NOW,
+    );
+    expect(stray.action).toBe("handoff_to_human");
+    expect(store.leads).toHaveLength(1);
+  });
+});
 
 describe("validated LLM guidance", () => {
   it("starts from the first field that remains missing", async () => {
@@ -193,6 +269,7 @@ describe("validated LLM guidance", () => {
           demoName: "Клиент Извлечённый",
           phone: "+70000002010",
           area: "Басманный район",
+          fulfillmentChoice: "self_service",
           preferredDate: "2026-08-01",
         },
       },
@@ -217,6 +294,7 @@ class InMemoryChatStore implements ChatWorkflowStore {
     category: CrmCategory;
     source: "ai_chat";
     status: "waiting_booking" | "booked";
+    needsOperator: boolean;
   }> = [];
   bookings: Array<{ id: string; leadId: string; slotId: string }> = [];
   private publicNumber = 3000;
@@ -289,7 +367,7 @@ class InMemoryChatStore implements ChatWorkflowStore {
 
   async createLeadTurn(input: {
     conversationId: string;
-    expectedStep: "preferred_time";
+    expectedStep: "preferred_time" | "fulfillment";
     data: CompleteChatLeadData;
     customerMessage: string;
     hasSlots: boolean;
@@ -312,8 +390,10 @@ class InMemoryChatStore implements ChatWorkflowStore {
       category: input.data.category,
       source: "ai_chat",
       status: "waiting_booking",
+      needsOperator: !input.hasSlots,
     });
     conversation.currentStep = "slot";
+    conversation.status = input.hasSlots ? "active" : "human_required";
     conversation.collectedData = {
       ...input.data,
       leadId,

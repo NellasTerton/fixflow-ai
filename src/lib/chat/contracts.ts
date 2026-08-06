@@ -30,6 +30,7 @@ export const chatSteps = [
   "name",
   "phone",
   "area",
+  "fulfillment",
   "preferred_date",
   "preferred_time",
   "slot",
@@ -62,6 +63,7 @@ export interface ChatCollectedData {
   demoName?: string;
   phone?: string;
   area?: string;
+  fulfillmentChoice?: "self_service" | "callback";
   preferredDate?: string;
   preferredTime?: string;
   leadId?: string;
@@ -105,6 +107,7 @@ export const storedChatDataSchema = z.object({
   demoName: z.string().max(60).optional(),
   phone: z.string().max(20).optional(),
   area: z.string().max(120).optional(),
+  fulfillmentChoice: z.enum(["self_service", "callback"]).optional(),
   preferredDate: z.string().date().optional(),
   preferredTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   leadId: z.uuid().optional(),

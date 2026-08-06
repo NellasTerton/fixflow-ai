@@ -81,8 +81,11 @@ export interface CompleteChatLeadData {
   demoName: string;
   phone: string;
   area: string;
-  preferredDate: string;
-  preferredTime: string;
+  // Absent for an operator-callback lead — the customer chose not to pick
+  // an exact time themselves, and `leads.preferred_date`/`preferred_time`
+  // are nullable columns for exactly this case.
+  preferredDate?: string;
+  preferredTime?: string;
 }
 
 export interface ChatWorkflowStore {
@@ -111,7 +114,9 @@ export interface ChatWorkflowStore {
   }): Promise<boolean>;
   createLeadTurn(input: {
     conversationId: string;
-    expectedStep: "preferred_time";
+    // "fulfillment" is the operator-callback path — the lead is created
+    // right there, with no date/time collected at all.
+    expectedStep: "preferred_time" | "fulfillment";
     data: CompleteChatLeadData;
     customerMessage: string;
     hasSlots: boolean;
@@ -312,9 +317,11 @@ export async function continueChatWorkflow(
         now,
         areaSchema,
         "area",
-        "preferred_date",
-        "На какую дату нужен выезд?",
+        "fulfillment",
+        FULFILLMENT_QUESTION,
       );
+    case "fulfillment":
+      return handleFulfillmentChoice(store, conversation, data, message, now);
     case "preferred_date":
       return handlePreferredDate(store, conversation, data, message, now);
     case "preferred_time":
@@ -496,6 +503,118 @@ async function handleTextStep<T extends string>(
   });
 
   return response(conversation.id, reply, "ask_question", nextData);
+}
+
+const FULFILLMENT_QUESTION =
+  "Готовы сразу назвать дату и время визита, или вам удобнее, если оператор перезвонит и всё согласует?";
+const SELF_SERVICE_PATTERN = /сам|дату|время|назнач|выбер/iu;
+const CALLBACK_PATTERN = /операт|перезвон|позвон|звонок|человек/iu;
+
+/**
+ * The one branch point after area: pick a time yourself (the existing
+ * preferred_date → preferred_time → propose/confirm pipeline, unchanged) or
+ * ask for a callback instead of managing scheduling. Neither path is forced
+ * on every customer, matching how a real dispatcher would offer both.
+ */
+async function handleFulfillmentChoice(
+  store: ChatWorkflowStore,
+  conversation: StoredChatConversation,
+  data: ChatCollectedData,
+  message: string,
+  now: Date,
+) {
+  const trimmed = message.trim();
+
+  if (CALLBACK_PATTERN.test(trimmed)) {
+    return requestOperatorCallback(store, conversation, data, message, now);
+  }
+
+  if (SELF_SERVICE_PATTERN.test(trimmed)) {
+    const nextData = { ...data, fulfillmentChoice: "self_service" as const };
+    const reply = "На какую дату нужен выезд?";
+
+    await store.saveTurn({
+      conversationId: conversation.id,
+      expectedStep: "fulfillment",
+      nextStep: "preferred_date",
+      data: nextData,
+      customerMessage: message,
+      assistantMessage: reply,
+      now,
+    });
+
+    return response(conversation.id, reply, "ask_question", nextData);
+  }
+
+  return persistRetry(
+    store,
+    conversation,
+    data,
+    message,
+    `Не поняла — назвать дату и время самостоятельно, или пусть перезвонит оператор? ${FULFILLMENT_QUESTION}`,
+    "ask_question",
+    [],
+    now,
+  );
+}
+
+async function requestOperatorCallback(
+  store: ChatWorkflowStore,
+  conversation: StoredChatConversation,
+  data: ChatCollectedData,
+  message: string,
+  now: Date,
+) {
+  const completeData = completeLeadDataSchema.safeParse({
+    ...data,
+    fulfillmentChoice: "callback",
+  });
+
+  if (!completeData.success) {
+    return response(
+      conversation.id,
+      "Не удалось собрать данные заявки. Начните новый чат.",
+      "handoff_to_human",
+      data,
+    );
+  }
+
+  // Reuses the exact mechanism today's "no real slots available" fallback
+  // already relies on: hasSlots: false sets needs_operator = true and
+  // conversation status = human_required, which is precisely what an
+  // operator-callback request needs. No new SQL.
+  const created = await store.createLeadTurn({
+    conversationId: conversation.id,
+    expectedStep: "fulfillment",
+    data: completeData.data,
+    customerMessage: message,
+    hasSlots: false,
+    assistantSuffix:
+      " создана. Оператор перезвонит вам в ближайшее время, чтобы согласовать выезд.",
+    now,
+  });
+
+  if (!created) {
+    return response(
+      conversation.id,
+      "Состояние диалога уже изменилось. Обновите страницу.",
+      "handoff_to_human",
+      data,
+    );
+  }
+
+  const nextData = {
+    ...completeData.data,
+    leadId: created.leadId,
+    publicNumber: created.publicNumber,
+  };
+
+  return response(
+    conversation.id,
+    created.assistantMessage,
+    "handoff_to_human",
+    nextData,
+  );
 }
 
 async function handlePreferredDate(
@@ -903,11 +1022,21 @@ export async function validateChatExtraction(
       ? problem.data
       : originalProblem,
   };
-  const category = z.enum(CHAT_CATEGORIES).safeParse(hints.category);
+  // Same three-tier resolution handleCategory uses for a mid-conversation
+  // free-text answer: trust the LLM's own category first, but don't give up
+  // on a miss — the classifier occasionally leaves category null or picks
+  // "common" on an ambiguous first message even when the raw text names the
+  // category outright ("установка кондиционера"), and re-asking something
+  // the customer already said is exactly the "не поняла" complaint this was
+  // meant to fix.
+  const parsedCategory = z.enum(CHAT_CATEGORIES).safeParse(hints.category);
+  const category = parsedCategory.success
+    ? parsedCategory.data
+    : classifyCategory(originalProblem);
 
-  if (category.success) {
-    data.category = category.data;
-    const availableServices = await store.listServices(category.data);
+  if (category) {
+    data.category = category;
+    const availableServices = await store.listServices(category);
     const matched = matchServiceByName(
       availableServices,
       hints.serviceType ?? "",
@@ -999,6 +1128,10 @@ export async function resolvePendingPrompt(
       "area",
       "Укажите район или общий адрес без номера дома и квартиры.",
     );
+  }
+
+  if (!data.fulfillmentChoice) {
+    return askPrompt("fulfillment", FULFILLMENT_QUESTION);
   }
 
   if (!data.preferredDate) {
@@ -1127,6 +1260,11 @@ const completeLeadDataSchema = z.object({
   demoName: z.string().min(2).max(60),
   phone: z.string().regex(RUSSIAN_PHONE_PATTERN),
   area: z.string().min(2).max(120),
-  preferredDate: z.string().date(),
-  preferredTime: z.string().regex(/^\d{2}:\d{2}$/),
+  fulfillmentChoice: z.enum(["self_service", "callback"]).optional(),
+  // Optional so an operator-callback lead (requestOperatorCallback) can be
+  // created without them. The self-service path (handlePreferredTime)
+  // always supplies a schema-validated string before parsing here, so this
+  // doesn't loosen anything for that path.
+  preferredDate: z.string().date().optional(),
+  preferredTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
 });

@@ -26,8 +26,9 @@ Rules:
   proposedAction must be handoff_to_human.
 - Cite the source you used as [1] when you quote a price.
 - Do not create leads, bookings or database records.
-- Reply in Russian, keep it to at most two short sentences, and end with one brief
-  question that moves toward arranging a visit.`;
+- Reply in Russian, keep it to at most two short sentences, and answer only —
+  do not ask a follow-up question of your own. The dispatcher asks the next
+  question separately, right after your answer.`;
 
 export type KnowledgeRetriever = (
   question: string,
