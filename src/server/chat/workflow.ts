@@ -163,7 +163,7 @@ export async function startChatWorkflow(
     problemDescription,
     ...guidance.collectedData,
   };
-  const next = await determineNextPrompt(store, data);
+  const next = await resolvePendingPrompt(store, data);
   // When the LLM has already resolved the service from the free-text problem,
   // the first reply acknowledges it by its validated catalog name so the
   // customer sees the request was understood — the name comes from the
@@ -683,12 +683,17 @@ export function isExpectedStepAnswer(
   now = new Date(),
 ): boolean {
   switch (step) {
+    // name/area only validate length — a question like "какая у вас
+    // гарантия?" passes that just as easily as a real name or district, and
+    // would otherwise be silently stored as the field's value. phone/date/
+    // time already have a real structural format a question can't satisfy,
+    // so they don't need this guard.
     case "name":
-      return nameSchema.safeParse(message).success;
+      return !looksLikeQuestion(message) && nameSchema.safeParse(message).success;
     case "phone":
       return phoneSchema.safeParse(message).success;
     case "area":
-      return areaSchema.safeParse(message).success;
+      return !looksLikeQuestion(message) && areaSchema.safeParse(message).success;
     case "preferred_date":
       return preferredDateSchema(now).safeParse(message).success;
     case "preferred_time":
@@ -696,6 +701,10 @@ export function isExpectedStepAnswer(
     default:
       return false;
   }
+}
+
+function looksLikeQuestion(message: string): boolean {
+  return message.includes("?");
 }
 
 export async function validateChatExtraction(
@@ -759,7 +768,16 @@ export async function validateChatExtraction(
   return data;
 }
 
-async function determineNextPrompt(
+/**
+ * What the customer still needs to do next, derived purely from collected
+ * data — independent of whatever step is literally stored as `currentStep`.
+ * This is the single source of truth for "what's pending": the normal FSM
+ * uses it to start a conversation, and the RAG layer (llm-orchestrator.ts)
+ * reuses it to reattach a real next step after answering a knowledge
+ * question, instead of leaving the customer on a bare paragraph with no way
+ * to continue.
+ */
+export async function resolvePendingPrompt(
   store: ChatWorkflowStore,
   data: ChatCollectedData,
 ): Promise<{

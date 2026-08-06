@@ -5,7 +5,9 @@ import { randomUUID } from "node:crypto";
 import type {
   ChatCollectedData,
   ChatField,
+  ChatOption,
   ChatResponse,
+  ChatStep,
 } from "../../lib/chat/contracts";
 import { createAnthropicProvider } from "../llm/anthropic-provider";
 import { saveChatAiRun, saveRagAiRun } from "../llm/ai-run-store";
@@ -24,6 +26,7 @@ import { databaseChatStore } from "./store";
 import {
   continueChatWorkflow,
   isExpectedStepAnswer,
+  resolvePendingPrompt,
   startChatWorkflow,
   validateChatExtraction,
 } from "./workflow";
@@ -176,19 +179,38 @@ export async function continueChatWithLlm(
       provider,
       retrieve: retrieveKnowledge,
     });
+    // A RAG aside must not leave the customer on a bare paragraph with no
+    // way to continue: re-derive whatever the FSM still needs from the
+    // already-collected data and attach its real prompt/options, the same
+    // way a normal step reply would. "slot"/"complete" already have every
+    // field set (a lead/booking exists), so resolvePendingPrompt's
+    // presence-checks would incorrectly fall through to re-asking for
+    // preferred_time — those two keep today's bare-answer behavior.
+    const pending =
+      answer.status === "success" && canReattachPendingPrompt(conversation.currentStep)
+        ? await resolvePendingPrompt(databaseChatStore, conversation.collectedData)
+        : null;
+    const combined = pending
+      ? combineWithPendingPrompt(answer.reply, pending)
+      : null;
     const saved = await databaseChatStore.saveTurn({
       conversationId,
       expectedStep: conversation.currentStep,
       nextStep: conversation.currentStep,
       data: conversation.collectedData,
       customerMessage: message,
-      assistantMessage: answer.reply,
+      assistantMessage: combined?.reply ?? answer.reply,
       status:
         answer.action === "handoff_to_human" ? "human_required" : "active",
       now: new Date(),
     });
     const response = saved
-      ? knowledgeResponse(conversationId, conversation.collectedData, answer)
+      ? knowledgeResponse(
+          conversationId,
+          conversation.collectedData,
+          answer,
+          combined ?? undefined,
+        )
       : await continueChatWorkflow(
           databaseChatStore,
           conversationId,
@@ -229,33 +251,65 @@ async function startKnowledgeConversation(
   const conversationId = randomUUID();
   const data: ChatCollectedData = { problemDescription: question };
 
+  // Only a genuinely answered question gets the FSM's real next prompt
+  // attached — a handoff already tells the customer a human is taking over,
+  // so inviting them to keep clicking through category buttons right after
+  // would contradict that message.
+  const pending =
+    answer.status === "success"
+      ? await resolvePendingPrompt(databaseChatStore, data)
+      : null;
+  const combined = pending
+    ? combineWithPendingPrompt(answer.reply, pending)
+    : null;
+
   await databaseChatStore.startConversation({
     conversationId,
-    currentStep: "category",
+    currentStep: pending?.step ?? "category",
     data,
     customerMessage: question,
-    assistantMessage: answer.reply,
-    action: answer.action,
+    assistantMessage: combined?.reply ?? answer.reply,
+    action: combined?.action ?? answer.action,
     status:
       answer.action === "handoff_to_human" ? "human_required" : "active",
     now: new Date(),
   });
 
-  return knowledgeResponse(conversationId, data, answer);
+  return knowledgeResponse(conversationId, data, answer, combined ?? undefined);
+}
+
+/**
+ * Steps resolvePendingPrompt can safely re-derive from collected data alone.
+ * See the comment above its call site in continueChatWithLlm.
+ */
+function canReattachPendingPrompt(step: ChatStep) {
+  return step !== "slot" && step !== "complete";
+}
+
+function combineWithPendingPrompt(
+  ragReply: string,
+  pending: { action: ChatResponse["action"]; reply: string; options: ChatOption[] },
+) {
+  return {
+    reply: `${ragReply}\n\n${pending.reply}`,
+    action: pending.action,
+    options: pending.options,
+  };
 }
 
 function knowledgeResponse(
   conversationId: string,
   collectedData: ChatCollectedData,
   answer: RagAnswer,
+  combined?: { reply: string; action: ChatResponse["action"]; options: ChatOption[] },
 ): ChatResponse {
   return {
     conversationId,
-    reply: answer.reply,
-    action: answer.action,
+    reply: combined?.reply ?? answer.reply,
+    action: combined?.action ?? answer.action,
     missingFields: getMissingFieldNames(collectedData),
     collectedData,
-    options: [],
+    options: combined?.options ?? [],
     sources: answer.sources.map((source) => ({
       title: source.title,
       source: source.source,

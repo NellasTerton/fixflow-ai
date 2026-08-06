@@ -2,7 +2,6 @@
 
 import {
   ArrowLeft,
-  BookOpenText,
   Bot,
   CalendarDays,
   CheckCircle2,
@@ -142,32 +141,6 @@ export function ChatClient() {
                 </div>
               )}
 
-              {result?.sources && result.sources.length > 0 ? (
-                <aside className="rounded-2xl border border-[#477233]/15 bg-[#eef4e9] p-4">
-                  <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#477233]">
-                    <BookOpenText className="size-4" aria-hidden="true" />
-                    Источники ответа
-                  </p>
-                  <div className="mt-3 grid gap-2">
-                    {result.sources.map((source) => (
-                      <article
-                        key={`${source.source}-${source.similarity}`}
-                        className="rounded-xl bg-white p-3 text-xs text-[#5f6e72]"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <p className="font-semibold text-[#263a3f]">
-                            {source.title}
-                          </p>
-                          <span className="shrink-0 font-mono text-[#477233]">
-                            {(source.similarity * 100).toFixed(0)}%
-                          </span>
-                        </div>
-                        <p className="mt-1.5 leading-5">{source.excerpt}</p>
-                      </article>
-                    ))}
-                  </div>
-                </aside>
-              ) : null}
             </div>
 
             <footer className="border-t border-[#102328]/8 bg-white p-4 sm:p-6">
