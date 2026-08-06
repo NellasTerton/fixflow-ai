@@ -10,14 +10,12 @@ import {
   type ChatResponse,
   type ChatStep,
 } from "../../lib/chat/contracts";
-import {
-  categoryLabels,
-  type CrmCategory,
-} from "../../lib/crm/constants";
+import type { CrmCategory } from "../../lib/crm/constants";
 import {
   normalizePhone,
   RUSSIAN_PHONE_PATTERN,
 } from "../../lib/request/schema";
+import { determineKnowledgeCategory } from "../rag/category";
 
 const CHAT_CATEGORIES = [
   "appliance_repair",
@@ -117,6 +115,11 @@ export interface ChatWorkflowStore {
     data: CompleteChatLeadData;
     customerMessage: string;
     hasSlots: boolean;
+    // Caller-computed instead of a hardcoded "Выберите свободное время" —
+    // there are no buttons, so this is the actual next question in prose
+    // (the nearest real slot proposal, already resolved by the caller from
+    // the same availability data used to set hasSlots).
+    assistantSuffix: string;
     now: Date;
   }): Promise<{
     leadId: string;
@@ -140,6 +143,20 @@ export interface ChatWorkflowStore {
 
 export interface ChatStartGuidance {
   collectedData?: Partial<ChatCollectedData>;
+}
+
+/**
+ * LLM-proposed category/service for the *current* turn's free text, used
+ * only as a fallback candidate when the step's own deterministic matcher
+ * (classifyCategory / matchServiceByName against the raw message) can't
+ * resolve it — e.g. "течёт труба под мойкой" doesn't literally contain
+ * "Устранение протечки". The candidate still goes through the same
+ * deterministic catalog re-validation as any other input; this only widens
+ * what gets tried, it never lets the LLM's output through unchecked.
+ */
+export interface ChatTurnGuidance {
+  category?: CrmCategory | null;
+  serviceType?: string | null;
 }
 
 export interface ChatExtractionHints {
@@ -197,6 +214,7 @@ export async function continueChatWorkflow(
   conversationId: string,
   message: string,
   now = new Date(),
+  guidance: ChatTurnGuidance = {},
 ): Promise<ChatResponse> {
   const conversation = await store.loadConversation(conversationId);
 
@@ -244,9 +262,23 @@ export async function continueChatWorkflow(
 
   switch (conversation.currentStep) {
     case "category":
-      return handleCategory(store, conversation, data, message, now);
+      return handleCategory(
+        store,
+        conversation,
+        data,
+        message,
+        now,
+        guidance.category,
+      );
     case "service":
-      return handleService(store, conversation, data, message, now);
+      return handleService(
+        store,
+        conversation,
+        data,
+        message,
+        now,
+        guidance.serviceType,
+      );
     case "name":
       return handleTextStep(
         store,
@@ -305,29 +337,35 @@ async function handleCategory(
   data: ChatCollectedData,
   message: string,
   now: Date,
+  llmCategory?: CrmCategory | null,
 ) {
   const parsed = z.enum(CHAT_CATEGORIES).safeParse(message);
+  const category =
+    (parsed.success ? parsed.data : null) ??
+    classifyCategory(message) ??
+    (llmCategory && (CHAT_CATEGORIES as readonly string[]).includes(llmCategory)
+      ? (llmCategory as (typeof CHAT_CATEGORIES)[number])
+      : null);
 
-  if (!parsed.success) {
+  if (!category) {
     return persistRetry(
       store,
       conversation,
       data,
       message,
-      "Выберите категорию кнопкой ниже.",
-      "show_categories",
-      categoryOptions(),
+      "Не поняла направление. Это бытовая техника, сантехника или кондиционер?",
+      "ask_question",
+      [],
       now,
     );
   }
 
-  const nextData = { ...data, category: parsed.data };
-  const services = await store.listServices(parsed.data);
+  const nextData = { ...data, category };
+  const services = await store.listServices(category);
   const reply =
     services.length > 0
-      ? "Выберите тип услуги или техники."
+      ? `Какая нужна услуга: ${services.map((service) => service.name).join(", ")}? Можно своими словами.`
       : "Для этой категории сейчас нет активных услуг.";
-  const action = services.length > 0 ? "show_services" : "handoff_to_human";
   const nextStep = services.length > 0 ? "service" : "category";
 
   await store.saveTurn({
@@ -335,7 +373,7 @@ async function handleCategory(
     expectedStep: "category",
     nextStep,
     data: nextData,
-    customerMessage: categoryLabels[parsed.data],
+    customerMessage: message,
     assistantMessage: reply,
     status: services.length > 0 ? "active" : "human_required",
     now,
@@ -344,10 +382,23 @@ async function handleCategory(
   return response(
     conversation.id,
     reply,
-    action,
+    services.length > 0 ? "ask_question" : "handoff_to_human",
     nextData,
-    serviceOptions(services),
   );
+}
+
+/**
+ * Deterministic free-text fallback for category — reuses the same
+ * keyword-regex classifier the RAG layer already relies on
+ * (determineKnowledgeCategory), rather than requiring a button click. It
+ * always returns *some* category (defaulting to "common"), so anything
+ * outside the three bookable ones is treated as unclassified here.
+ */
+function classifyCategory(message: string): CrmCategory | null {
+  const category = determineKnowledgeCategory(message);
+  return (CHAT_CATEGORIES as readonly string[]).includes(category)
+    ? (category as (typeof CHAT_CATEGORIES)[number])
+    : null;
 }
 
 async function handleService(
@@ -356,19 +407,22 @@ async function handleService(
   data: ChatCollectedData,
   message: string,
   now: Date,
+  llmServiceType?: string | null,
 ) {
   if (!data.category) {
     return response(
       conversation.id,
-      "Выберите категорию.",
-      "show_categories",
+      "Уточните, пожалуйста, направление: бытовая техника, сантехника или кондиционер?",
+      "ask_question",
       data,
-      categoryOptions(),
     );
   }
 
   const services = await store.listServices(data.category);
-  const selected = services.find((service) => service.id === message);
+  const selected =
+    services.find((service) => service.id === message) ??
+    matchServiceByName(services, message) ??
+    (llmServiceType ? matchServiceByName(services, llmServiceType) : null);
 
   if (!selected) {
     return persistRetry(
@@ -376,9 +430,9 @@ async function handleService(
       conversation,
       data,
       message,
-      "Выберите доступную услугу кнопкой ниже.",
-      "show_services",
-      serviceOptions(services),
+      `Не поняла услугу. Доступно: ${services.map((service) => service.name).join(", ")}. Опишите проблему ещё раз своими словами.`,
+      "ask_question",
+      [],
       now,
     );
   }
@@ -523,12 +577,59 @@ async function handlePreferredTime(
     completeData.data.preferredDate,
     completeData.data.preferredTime,
   );
+  const nearest = slots[0];
+
+  // A lead already exists here when the customer declined the first
+  // proposal (handleSlot sends them back to preferred_date) — this is a
+  // re-propose against the newly stated time, not a fresh booking, so it
+  // must not call createLeadTurn again: that write is guarded to fire
+  // exactly once per conversation (lead_id is null) and would correctly
+  // refuse a second attempt.
+  if (data.leadId && data.publicNumber) {
+    // completeLeadDataSchema doesn't declare leadId/publicNumber, so parsing
+    // through it silently drops them — merge them back onto the result
+    // instead of losing the already-created lead.
+    const nextData = {
+      ...completeData.data,
+      leadId: data.leadId,
+      publicNumber: data.publicNumber,
+    };
+    const reply = nearest
+      ? `Ближайшее свободное время — ${formatSlot(nearest)}. Подходит?`
+      : "Свободных слотов на эту дату нет. Заявка передана человеку.";
+
+    await store.saveTurn({
+      conversationId: conversation.id,
+      expectedStep: "preferred_time",
+      nextStep: "slot",
+      data: nextData,
+      customerMessage: parsedTime.data,
+      assistantMessage: reply,
+      status: nearest ? "active" : "human_required",
+      now,
+    });
+
+    return response(
+      conversation.id,
+      reply,
+      nearest ? "ask_question" : "handoff_to_human",
+      nextData,
+    );
+  }
+
+  // No button grid — propose the single closest real slot in prose and let
+  // handleSlot read a plain yes/no reply, the same way a human dispatcher
+  // would offer one time rather than reading out the whole schedule.
+  const assistantSuffix = nearest
+    ? ` создана. Ближайшее свободное время — ${formatSlot(nearest)}. Подходит?`
+    : " создана, но свободных слотов сейчас нет. Заявка передана человеку.";
   const created = await store.createLeadTurn({
     conversationId: conversation.id,
     expectedStep: "preferred_time",
     data: completeData.data,
     customerMessage: parsedTime.data,
     hasSlots: slots.length > 0,
+    assistantSuffix,
     now,
   });
 
@@ -550,12 +651,23 @@ async function handlePreferredTime(
   return response(
     conversation.id,
     created.assistantMessage,
-    slots.length > 0 ? "show_slots" : "handoff_to_human",
+    slots.length > 0 ? "ask_question" : "handoff_to_human",
     nextData,
-    slotOptions(slots),
   );
 }
 
+const AFFIRMATIVE_PATTERN =
+  /^(?:да|ок|окей|хорошо|подходит|устраивает|давайте|го|запиш|бронир)/iu;
+const NEGATIVE_PATTERN = /^(?:нет|неа|не\s|друг|перенес|отмен)/iu;
+
+/**
+ * The "slot" step is a propose/confirm exchange, not a button grid: the
+ * previous step already proposed the single closest real slot in prose
+ * (see handlePreferredTime). A plain "да" books it; "нет" hands the
+ * customer back to re-stating a preferred date so the normal
+ * preferred_date → preferred_time pipeline re-proposes fresh, instead of
+ * trying to parse an arbitrary new date out of a free-form decline.
+ */
 async function handleSlot(
   store: ChatWorkflowStore,
   conversation: StoredChatConversation,
@@ -577,25 +689,77 @@ async function handleSlot(
     data.preferredDate,
     data.preferredTime,
   );
-  const selected = slots.find((slot) => slot.id === message);
 
-  if (!selected) {
+  if (slots.length === 0) {
     return persistRetry(
       store,
       conversation,
       data,
       message,
-      slots.length > 0
-        ? "Этот слот уже занят. Выберите другое свободное время."
-        : "Свободных слотов больше нет. Заявка передана человеку.",
-      slots.length > 0 ? "show_slots" : "handoff_to_human",
-      slotOptions(slots),
+      "Свободных слотов больше нет. Заявка передана человеку.",
+      "handoff_to_human",
+      [],
       now,
-      slots.length > 0 ? "active" : "human_required",
+      "human_required",
     );
   }
 
-  const assistantMessage = `Готово. Заявка ${data.publicNumber} создана, время ${formatSlot(selected)} забронировано.`;
+  const nearest = slots[0]!;
+  const trimmed = message.trim();
+
+  if (AFFIRMATIVE_PATTERN.test(trimmed)) {
+    return confirmSlot(store, conversation, data, nearest, message, now);
+  }
+
+  if (NEGATIVE_PATTERN.test(trimmed)) {
+    const reply = "Хорошо, на какую дату вам удобнее?";
+
+    await store.saveTurn({
+      conversationId: conversation.id,
+      expectedStep: "slot",
+      nextStep: "preferred_date",
+      data,
+      customerMessage: message,
+      assistantMessage: reply,
+      now,
+    });
+
+    return response(conversation.id, reply, "ask_question", data);
+  }
+
+  return persistRetry(
+    store,
+    conversation,
+    data,
+    message,
+    `Не поняла ответ. Ближайшее свободное время — ${formatSlot(nearest)}. Подходит? Напишите «да», либо «нет», чтобы назвать другую дату.`,
+    "ask_question",
+    [],
+    now,
+  );
+}
+
+async function confirmSlot(
+  store: ChatWorkflowStore,
+  conversation: StoredChatConversation,
+  data: ChatCollectedData,
+  slot: ChatSlot,
+  message: string,
+  now: Date,
+) {
+  // Guarded by handleSlot's own check just before calling this, but the
+  // narrower fields are asserted again here for the type going into
+  // createBookingTurn.
+  if (!data.category || !data.leadId || !data.publicNumber) {
+    return response(
+      conversation.id,
+      "Заявка не найдена. Начните новый чат.",
+      "handoff_to_human",
+      data,
+    );
+  }
+
+  const assistantMessage = `Готово. Заявка ${data.publicNumber} создана, время ${formatSlot(slot)} забронировано.`;
   const booked = await store.createBookingTurn({
     conversationId: conversation.id,
     expectedStep: "slot",
@@ -605,39 +769,54 @@ async function handleSlot(
       leadId: data.leadId,
       publicNumber: data.publicNumber,
     },
-    slotId: selected.id,
-    customerMessage: formatSlot(selected),
+    slotId: slot.id,
+    customerMessage: message,
     assistantMessage,
     now,
   });
 
   if (!booked) {
-    const refreshedSlots = await store.listAvailableSlots(data.category, now);
+    // Someone else took it between the proposal and this confirmation —
+    // recompute and offer the next-nearest instead of a bare failure.
+    const refreshed = sortSlotsByPreference(
+      await store.listAvailableSlots(data.category, now),
+      data.preferredDate,
+      data.preferredTime,
+    );
+
+    if (refreshed.length === 0) {
+      return persistRetry(
+        store,
+        conversation,
+        data,
+        message,
+        "Это время только что заняли, а свободных слотов больше нет. Заявка передана человеку.",
+        "handoff_to_human",
+        [],
+        now,
+        "human_required",
+      );
+    }
+
     return persistRetry(
       store,
       conversation,
       data,
       message,
-      "Этот слот только что заняли. Выберите другое свободное время.",
-      refreshedSlots.length > 0 ? "show_slots" : "handoff_to_human",
-      slotOptions(refreshedSlots),
+      `Это время только что заняли. Ближайшее свободное — ${formatSlot(refreshed[0]!)}. Подходит?`,
+      "ask_question",
+      [],
       now,
-      refreshedSlots.length > 0 ? "active" : "human_required",
     );
   }
 
   const nextData = {
     ...data,
-    slotId: selected.id,
+    slotId: slot.id,
     bookingId: booked.bookingId,
   };
 
-  return response(
-    conversation.id,
-    assistantMessage,
-    "complete",
-    nextData,
-  );
+  return response(conversation.id, assistantMessage, "complete", nextData);
 }
 
 async function persistRetry(
@@ -729,19 +908,14 @@ export async function validateChatExtraction(
   if (category.success) {
     data.category = category.data;
     const availableServices = await store.listServices(category.data);
-    const requestedService = normalizeText(hints.serviceType ?? "");
-    const matches = availableServices.filter((service) => {
-      const candidate = normalizeText(service.name);
-      return (
-        requestedService.length > 2 &&
-        (candidate.includes(requestedService) ||
-          requestedService.includes(candidate))
-      );
-    });
+    const matched = matchServiceByName(
+      availableServices,
+      hints.serviceType ?? "",
+    );
 
-    if (matches.length === 1) {
-      data.serviceId = matches[0]!.id;
-      data.serviceType = matches[0]!.name;
+    if (matched) {
+      data.serviceId = matched.id;
+      data.serviceType = matched.name;
     }
   }
 
@@ -789,10 +963,10 @@ export async function resolvePendingPrompt(
   if (!data.category) {
     return {
       step: "category",
-      action: "show_categories",
+      action: "ask_question",
       reply:
-        "К какому направлению относится проблема? Выберите один вариант.",
-      options: categoryOptions(),
+        "К какому направлению это относится: бытовая техника, сантехника или кондиционеры?",
+      options: [],
     };
   }
 
@@ -800,9 +974,12 @@ export async function resolvePendingPrompt(
     const availableServices = await store.listServices(data.category);
     return {
       step: "service",
-      action: "show_services",
-      reply: "Выберите тип услуги или техники.",
-      options: serviceOptions(availableServices),
+      action: "ask_question",
+      reply:
+        availableServices.length > 0
+          ? `Какая нужна услуга: ${availableServices.map((service) => service.name).join(", ")}? Можно своими словами.`
+          : "Для этой категории сейчас нет активных услуг.",
+      options: [],
     };
   }
 
@@ -847,6 +1024,30 @@ function normalizeText(value: string) {
   return value.trim().toLocaleLowerCase("ru-RU").replace(/\s+/gu, " ");
 }
 
+/**
+ * Deterministic free-text service match, shared by validateChatExtraction
+ * (LLM-proposed serviceType) and handleService (a customer typing the
+ * service name directly instead of clicking a button) — same substring rule
+ * in both places instead of two copies drifting apart.
+ */
+function matchServiceByName(
+  services: ChatService[],
+  requestedName: string,
+): ChatService | null {
+  const requested = normalizeText(requestedName);
+
+  if (requested.length <= 2) {
+    return null;
+  }
+
+  const matches = services.filter((service) => {
+    const candidate = normalizeText(service.name);
+    return candidate.includes(requested) || requested.includes(candidate);
+  });
+
+  return matches.length === 1 ? matches[0]! : null;
+}
+
 function response(
   conversationId: string,
   reply: string,
@@ -872,27 +1073,6 @@ function getMissingFields(data: ChatCollectedData): ChatField[] {
 
     return !data[field];
   });
-}
-
-function categoryOptions(): ChatOption[] {
-  return CHAT_CATEGORIES.map((category) => ({
-    value: category,
-    label: categoryLabels[category],
-  }));
-}
-
-function serviceOptions(services: ChatService[]): ChatOption[] {
-  return services.map((service) => ({
-    value: service.id,
-    label: service.name,
-  }));
-}
-
-function slotOptions(slots: ChatSlot[]): ChatOption[] {
-  return slots.map((slot) => ({
-    value: slot.id,
-    label: formatSlot(slot),
-  }));
 }
 
 function formatSlot(slot: ChatSlot) {

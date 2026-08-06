@@ -19,15 +19,8 @@ const quickStarters = [
  * /chat page — instead of being sent somewhere else to try the product.
  */
 export function HeroChat() {
-  const {
-    result,
-    messages,
-    pending,
-    error,
-    isFinished,
-    showOptions,
-    sendMessage,
-  } = useChatSession();
+  const { result, messages, pending, error, isFinished, sendMessage } =
+    useChatSession();
   const [value, setValue] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const hasStarted = messages.length > 1;
@@ -103,21 +96,7 @@ export function HeroChat() {
         </div>
 
         <div className="border-t border-white/10 px-5 py-4">
-          {showOptions && result ? (
-            <div className="grid max-h-[132px] gap-2 overflow-y-auto sm:grid-cols-2">
-              {result.options.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  disabled={pending}
-                  onClick={() => void sendMessage(option.value, option.label)}
-                  className="rounded-lg border border-white/12 bg-white/5 px-3 py-2 text-left text-xs font-medium text-white/85 transition hover:border-[#bbf451]/40 hover:bg-white/10 disabled:opacity-50"
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          ) : isFinished ? (
+          {isFinished ? (
             <div className="flex flex-wrap gap-2">
               {result?.collectedData.leadId && (
                 <Link

@@ -30,10 +30,6 @@ export function useChatSession() {
 
   const isFinished =
     result?.action === "complete" || result?.action === "handoff_to_human";
-  const showOptions =
-    result !== null &&
-    ["show_categories", "show_services", "show_slots"].includes(result.action) &&
-    result.options.length > 0;
 
   function appendMessage(
     sender: TranscriptMessage["sender"],
@@ -101,7 +97,6 @@ export function useChatSession() {
     pending,
     error,
     isFinished,
-    showOptions,
     sendMessage,
   };
 }

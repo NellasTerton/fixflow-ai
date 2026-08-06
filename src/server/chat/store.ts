@@ -283,9 +283,10 @@ export const databaseChatStore: ChatWorkflowStore = {
       ? "active"
       : "human_required";
     const assistantPrefix = "Данные собраны. Заявка ";
-    const assistantSuffix = input.hasSlots
-      ? " создана. Выберите свободное время."
-      : " создана, но свободных слотов сейчас нет. Заявка передана человеку.";
+    // Caller-computed (workflow.ts already knows the actual nearest slot to
+    // propose, or the no-slots fallback) rather than a hardcoded "Выберите
+    // свободное время" — there's no button grid to choose from anymore.
+    const assistantSuffix = input.assistantSuffix;
 
     const result = await db.execute(sql`
       with locked_conversation as (
@@ -435,7 +436,7 @@ export const databaseChatStore: ChatWorkflowStore = {
           'assistant',
           ${assistantPrefix} || created_lead.public_number || ${assistantSuffix},
           ${JSON.stringify({
-            action: input.hasSlots ? "show_slots" : "handoff_to_human",
+            action: input.hasSlots ? "ask_question" : "handoff_to_human",
             deterministic: true,
           })}::jsonb,
           ${new Date(input.now.getTime() + 1)}

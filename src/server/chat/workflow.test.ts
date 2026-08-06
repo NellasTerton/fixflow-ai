@@ -51,6 +51,13 @@ const scenarios = [
   },
 ] as const;
 
+const categoryFreeTextAnswers: Record<CrmCategory, string> = {
+  appliance_repair: "бытовая техника",
+  plumbing: "сантехника",
+  air_conditioning: "кондиционеры",
+  common: "не уверен",
+};
+
 describe.each(scenarios)(
   "deterministic chat: $category",
   ({ category, service, problem, phone }) => {
@@ -68,22 +75,29 @@ describe.each(scenarios)(
       );
 
       const start = await startChatWorkflow(store, problem, NOW);
-      expect(start.action).toBe("show_categories");
+      expect(start.action).toBe("ask_question");
+      expect(start.options).toHaveLength(0);
       expect(start.missingFields).not.toContain("problemDescription");
 
+      // No buttons — the category is resolved from a plain-language answer
+      // via the same keyword classifier the RAG layer uses, not a literal
+      // enum value a button click would send.
       const categoryResponse = await continueChatWorkflow(
         store,
         start.conversationId,
-        category,
+        categoryFreeTextAnswers[category],
         NOW,
       );
-      expect(categoryResponse.action).toBe("show_services");
+      expect(categoryResponse.action).toBe("ask_question");
+      expect(categoryResponse.reply).toContain(service.name);
       expect(categoryResponse.missingFields).not.toContain("category");
 
+      // Same for the service — typing its name resolves it via fuzzy
+      // matching instead of clicking a button with its id.
       const serviceResponse = await continueChatWorkflow(
         store,
         start.conversationId,
-        service.id,
+        service.name,
         NOW,
       );
       expect(serviceResponse.action).toBe("ask_question");
@@ -117,8 +131,11 @@ describe.each(scenarios)(
         );
       }
 
-      expect(response.action).toBe("show_slots");
-      expect(response.options).toHaveLength(1);
+      // Propose/confirm instead of a slot grid: the lead is created with the
+      // closest real slot already proposed in prose, no options attached.
+      expect(response.action).toBe("ask_question");
+      expect(response.options).toHaveLength(0);
+      expect(response.reply).toContain("Подходит?");
       expect(response.collectedData.publicNumber).toMatch(/^FF-\d+$/);
       expect(store.leads[0]).toMatchObject({
         category,
@@ -129,7 +146,7 @@ describe.each(scenarios)(
       const completed = await continueChatWorkflow(
         store,
         start.conversationId,
-        response.options[0]!.value,
+        "да, подходит",
         NOW,
       );
 
@@ -276,6 +293,7 @@ class InMemoryChatStore implements ChatWorkflowStore {
     data: CompleteChatLeadData;
     customerMessage: string;
     hasSlots: boolean;
+    assistantSuffix: string;
   }) {
     const conversation = this.conversations.get(input.conversationId);
     if (
@@ -287,9 +305,7 @@ class InMemoryChatStore implements ChatWorkflowStore {
 
     const leadId = testId(5, this.leads.length + 1);
     const publicNumber = `FF-${this.publicNumber++}`;
-    const assistantMessage = input.hasSlots
-      ? `Данные собраны. Заявка ${publicNumber} создана. Выберите свободное время.`
-      : `Данные собраны. Заявка ${publicNumber} создана, но свободных слотов сейчас нет.`;
+    const assistantMessage = `Данные собраны. Заявка ${publicNumber}${input.assistantSuffix}`;
 
     this.leads.push({
       id: leadId,

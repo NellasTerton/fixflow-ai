@@ -227,11 +227,22 @@ export async function continueChatWithLlm(
     return response;
   }
 
+  // On the category/service steps, a customer's raw free text ("течёт труба
+  // под мойкой") often doesn't literally contain a catalog name, so the
+  // FSM's own matcher alone can miss it. Pass the same classification
+  // already computed above as a fallback candidate — workflow.ts still
+  // deterministically re-validates it against the real catalog before using
+  // it, same as validateChatExtraction does on the first turn.
+  const classification = usableClassification(result);
   const response = await continueChatWorkflow(
     databaseChatStore,
     conversationId,
     message,
     new Date(),
+    {
+      category: classification?.category,
+      serviceType: classification?.extractedData.serviceType,
+    },
   );
 
   await safelySaveRun({

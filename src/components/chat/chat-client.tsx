@@ -17,15 +17,8 @@ import { inputSettings } from "./input-settings";
 import { useChatSession } from "./use-chat-session";
 
 export function ChatClient() {
-  const {
-    result,
-    messages,
-    pending,
-    error,
-    isFinished,
-    showOptions,
-    sendMessage,
-  } = useChatSession();
+  const { result, messages, pending, error, isFinished, sendMessage } =
+    useChatSession();
   const [value, setValue] = useState("");
 
   const nextField = result?.missingFields[0] ?? "problemDescription";
@@ -153,28 +146,7 @@ export function ChatClient() {
                 </p>
               )}
 
-              {showOptions && result ? (
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {result.options.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      disabled={pending}
-                      onClick={() =>
-                        void sendMessage(option.value, option.label)
-                      }
-                      className="rounded-xl border border-[#102328]/12 bg-[#f7f8f3] px-4 py-3 text-left text-sm font-semibold text-[#263a3f] transition hover:border-[#477233]/40 hover:bg-[#eef4e9] disabled:opacity-50"
-                    >
-                      {option.label}
-                      {option.description && (
-                        <span className="mt-1 block text-xs font-normal text-[#738083]">
-                          {option.description}
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              ) : isFinished ? (
+              {isFinished ? (
                 <div className="flex flex-col gap-3 sm:flex-row">
                   {result?.collectedData.leadId && (
                     <Link
