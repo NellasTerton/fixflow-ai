@@ -2,9 +2,8 @@
 
 import { Bot, LoaderCircle, Send, ShieldAlert } from "lucide-react";
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
-import { inputSettings } from "@/components/chat/input-settings";
 import { useChatSession } from "@/components/chat/use-chat-session";
 
 const quickStarters = [
@@ -15,18 +14,14 @@ const quickStarters = [
 
 /**
  * The dispatcher itself, embedded in the landing hero. A visitor starts the
- * real conversation here — same endpoints and same state machine as the full
- * /chat page — instead of being sent somewhere else to try the product.
+ * real conversation here — same endpoints as the full /chat page — instead
+ * of being sent somewhere else to try the product.
  */
 export function HeroChat() {
-  const { result, messages, pending, error, isFinished, sendMessage } =
-    useChatSession();
+  const { result, messages, pending, error, sendMessage } = useChatSession();
   const [value, setValue] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const hasStarted = messages.length > 1;
-
-  const nextField = result?.missingFields[0] ?? "problemDescription";
-  const input = useMemo(() => inputSettings(nextField), [nextField]);
 
   useEffect(() => {
     const node = scrollRef.current;
@@ -96,72 +91,62 @@ export function HeroChat() {
         </div>
 
         <div className="border-t border-white/10 px-5 py-4">
-          {isFinished ? (
-            <div className="flex flex-wrap gap-2">
-              {result?.collectedData.leadId && (
+          {result?.publicNumber && (
+            <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-white/70">
+              <span>Заявка {result.publicNumber} создана.</span>
+              {result.leadId && (
                 <Link
-                  href={`/workspace/leads/${result.collectedData.leadId}`}
-                  className="inline-flex h-10 items-center rounded-lg bg-[#bbf451] px-4 text-sm font-semibold text-[#071a1f]"
+                  href={`/workspace/leads/${result.leadId}`}
+                  className="font-semibold text-[#bbf451] underline underline-offset-2"
                 >
-                  Открыть заявку {result.collectedData.publicNumber}
+                  Открыть
                 </Link>
               )}
-              <button
-                type="button"
-                onClick={() => window.location.reload()}
-                className="h-10 rounded-lg border border-white/15 px-4 text-sm font-semibold text-white/80"
-              >
-                Новая заявка
-              </button>
             </div>
-          ) : (
-            <>
-              {!hasStarted && (
-                <div className="mb-3 flex flex-wrap gap-2">
-                  {quickStarters.map((starter) => (
-                    <button
-                      key={starter}
-                      type="button"
-                      onClick={() => void sendMessage(starter)}
-                      className="rounded-full border border-white/12 bg-white/5 px-3 py-1.5 text-xs text-white/70 transition hover:border-[#bbf451]/40 hover:text-white"
-                    >
-                      {starter}
-                    </button>
-                  ))}
-                </div>
-              )}
-              <form onSubmit={handleSubmit} className="flex gap-2">
-                <label className="sr-only" htmlFor="hero-chat-answer">
-                  {input.label}
-                </label>
-                <input
-                  id="hero-chat-answer"
-                  type={input.type}
-                  value={value}
-                  min={input.min}
-                  max={input.max}
-                  maxLength={input.maxLength}
-                  onChange={(event) => setValue(event.target.value)}
-                  placeholder={input.placeholder}
-                  disabled={pending}
-                  required
-                  className="min-w-0 flex-1 rounded-lg border border-white/12 bg-white/5 px-3.5 py-2.5 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#bbf451]/50 focus:bg-white/8"
-                />
-                <button
-                  type="submit"
-                  disabled={pending || !value.trim()}
-                  className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#bbf451] text-[#071a1f] transition hover:bg-[#d0ff78] disabled:cursor-not-allowed disabled:opacity-40"
-                  aria-label="Отправить"
-                >
-                  {pending ? (
-                    <LoaderCircle className="size-4 animate-spin" />
-                  ) : (
-                    <Send className="size-4" />
-                  )}
-                </button>
-              </form>
-            </>
           )}
+
+          {!hasStarted && (
+            <div className="mb-3 flex flex-wrap gap-2">
+              {quickStarters.map((starter) => (
+                <button
+                  key={starter}
+                  type="button"
+                  onClick={() => void sendMessage(starter)}
+                  className="rounded-full border border-white/12 bg-white/5 px-3 py-1.5 text-xs text-white/70 transition hover:border-[#bbf451]/40 hover:text-white"
+                >
+                  {starter}
+                </button>
+              ))}
+            </div>
+          )}
+          <form onSubmit={handleSubmit} className="flex gap-2">
+            <label className="sr-only" htmlFor="hero-chat-answer">
+              Ответ
+            </label>
+            <input
+              id="hero-chat-answer"
+              type="text"
+              value={value}
+              maxLength={1000}
+              onChange={(event) => setValue(event.target.value)}
+              placeholder="Напишите сообщение"
+              disabled={pending}
+              required
+              className="min-w-0 flex-1 rounded-lg border border-white/12 bg-white/5 px-3.5 py-2.5 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#bbf451]/50 focus:bg-white/8"
+            />
+            <button
+              type="submit"
+              disabled={pending || !value.trim()}
+              className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#bbf451] text-[#071a1f] transition hover:bg-[#d0ff78] disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="Отправить"
+            >
+              {pending ? (
+                <LoaderCircle className="size-4 animate-spin" />
+              ) : (
+                <Send className="size-4" />
+              )}
+            </button>
+          </form>
         </div>
       </div>
 

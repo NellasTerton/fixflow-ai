@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { chatStartRequestSchema } from "@/lib/chat/contracts";
-import { startChatWithLlm } from "@/server/chat/llm-orchestrator";
+import { startChat } from "@/server/chat";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,18 +22,26 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await startChatWithLlm(parsed.data.message);
+    const result = await startChat(parsed.data.message);
 
     return NextResponse.json(result, {
       headers: { "Cache-Control": "no-store" },
     });
-  } catch {
-    console.error("Deterministic chat start failed");
+  } catch (error) {
+    console.error("Chat start failed", safeErrorCode(error));
     return NextResponse.json(
       { error: "Не удалось начать чат. Попробуйте ещё раз." },
       { status: 503 },
     );
   }
+}
+
+function safeErrorCode(error: unknown) {
+  if (error && typeof error === "object" && "code" in error) {
+    return String(error.code);
+  }
+
+  return "unknown";
 }
 
 async function readJson(request: Request) {

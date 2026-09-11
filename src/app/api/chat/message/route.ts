@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { chatMessageRequestSchema } from "@/lib/chat/contracts";
-import { continueChatWithLlm } from "@/server/chat/llm-orchestrator";
+import { continueChat } from "@/server/chat";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await continueChatWithLlm(
+    const result = await continueChat(
       parsed.data.conversationId,
       parsed.data.message,
     );
@@ -31,8 +31,8 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     // Only the database error code is logged: the failing statement carries
-    // demo phone numbers and addresses that must stay out of logs.
-    console.error("Deterministic chat message failed", safeErrorCode(error));
+    // real phone numbers and addresses that must stay out of logs.
+    console.error("Chat message failed", safeErrorCode(error));
     return NextResponse.json(
       { error: "Не удалось продолжить чат. Попробуйте ещё раз." },
       { status: 503 },

@@ -17,6 +17,11 @@ export const chatGreeting =
  * Owns one conversation with the dispatcher: transcript, pending state and
  * the start/continue endpoint switch. Shared by the full chat page and the
  * compact widget on the landing page so both behave identically.
+ *
+ * The conversation never hard-stops — a lead can exist and the customer can
+ * keep asking questions (e.g. after booking). `result.publicNumber` is
+ * surfaced so callers can show a persistent "заявка создана" banner without
+ * blocking further input.
  */
 export function useChatSession() {
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -28,9 +33,6 @@ export function useChatSession() {
   const [error, setError] = useState<string | null>(null);
   const nextMessageId = useRef(2);
 
-  const isFinished =
-    result?.action === "complete" || result?.action === "handoff_to_human";
-
   function appendMessage(
     sender: TranscriptMessage["sender"],
     content: string,
@@ -39,19 +41,16 @@ export function useChatSession() {
     setMessages((current) => [...current, { id, sender, content }]);
   }
 
-  async function sendMessage(
-    submittedValue: string,
-    displayValue = submittedValue,
-  ) {
+  async function sendMessage(submittedValue: string) {
     const normalized = submittedValue.trim();
 
-    if (!normalized || pending || isFinished) {
+    if (!normalized || pending) {
       return;
     }
 
     setPending(true);
     setError(null);
-    appendMessage("customer", displayValue);
+    appendMessage("customer", normalized);
 
     try {
       const response = await fetch(
@@ -96,7 +95,6 @@ export function useChatSession() {
     messages,
     pending,
     error,
-    isFinished,
     sendMessage,
   };
 }
