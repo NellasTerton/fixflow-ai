@@ -11,18 +11,13 @@ import {
   UserRound,
 } from "lucide-react";
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useState } from "react";
 
-import { inputSettings } from "./input-settings";
 import { useChatSession } from "./use-chat-session";
 
 export function ChatClient() {
-  const { result, messages, pending, error, isFinished, sendMessage } =
-    useChatSession();
+  const { result, messages, pending, error, sendMessage } = useChatSession();
   const [value, setValue] = useState("");
-
-  const nextField = result?.missingFields[0] ?? "problemDescription";
-  const input = useMemo(() => inputSettings(nextField), [nextField]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -133,7 +128,6 @@ export function ChatClient() {
                   Печатает…
                 </div>
               )}
-
             </div>
 
             <footer className="border-t border-[#102328]/8 bg-white p-4 sm:p-6">
@@ -146,56 +140,48 @@ export function ChatClient() {
                 </p>
               )}
 
-              {isFinished ? (
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  {result?.collectedData.leadId && (
+              {result?.publicNumber && (
+                <div className="mb-3 flex flex-wrap items-center gap-3 rounded-xl bg-[#eef4e9] px-4 py-3 text-sm text-[#315b2d]">
+                  <span>Заявка {result.publicNumber} создана.</span>
+                  {result.leadId && (
                     <Link
-                      href={`/workspace/leads/${result.collectedData.leadId}`}
-                      className="inline-flex h-11 items-center justify-center rounded-xl bg-[#102328] px-5 text-sm font-semibold text-white"
+                      href={`/workspace/leads/${result.leadId}`}
+                      className="font-semibold underline underline-offset-2"
                     >
-                      Открыть {result.collectedData.publicNumber}
+                      Открыть заявку
                     </Link>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => window.location.reload()}
-                    className="h-11 rounded-xl border border-[#102328]/12 px-5 text-sm font-semibold text-[#263a3f]"
-                  >
-                    Новая заявка
-                  </button>
                 </div>
-              ) : (
-                <form onSubmit={handleSubmit} className="flex gap-2">
-                  <label className="sr-only" htmlFor="chat-answer">
-                    {input.label}
-                  </label>
-                  <input
-                    id="chat-answer"
-                    type={input.type}
-                    value={value}
-                    min={input.min}
-                    max={input.max}
-                    maxLength={input.maxLength}
-                    onChange={(event) => setValue(event.target.value)}
-                    placeholder={input.placeholder}
-                    disabled={pending}
-                    required
-                    className="min-w-0 flex-1 rounded-xl border border-[#102328]/14 bg-white px-4 py-3 text-sm text-[#102328] outline-none transition placeholder:text-[#8c989a] focus:border-[#477233] focus:ring-3 focus:ring-[#477233]/12"
-                  />
-                  <button
-                    type="submit"
-                    disabled={pending || !value.trim()}
-                    className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[#bbf451] text-[#102328] transition hover:bg-[#aeea3c] disabled:cursor-not-allowed disabled:opacity-50"
-                    aria-label="Отправить"
-                  >
-                    {pending ? (
-                      <LoaderCircle className="size-5 animate-spin" />
-                    ) : (
-                      <Send className="size-5" />
-                    )}
-                  </button>
-                </form>
               )}
+
+              <form onSubmit={handleSubmit} className="flex gap-2">
+                <label className="sr-only" htmlFor="chat-answer">
+                  Ответ
+                </label>
+                <input
+                  id="chat-answer"
+                  type="text"
+                  value={value}
+                  maxLength={1000}
+                  onChange={(event) => setValue(event.target.value)}
+                  placeholder="Напишите сообщение"
+                  disabled={pending}
+                  required
+                  className="min-w-0 flex-1 rounded-xl border border-[#102328]/14 bg-white px-4 py-3 text-sm text-[#102328] outline-none transition placeholder:text-[#8c989a] focus:border-[#477233] focus:ring-3 focus:ring-[#477233]/12"
+                />
+                <button
+                  type="submit"
+                  disabled={pending || !value.trim()}
+                  className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[#bbf451] text-[#102328] transition hover:bg-[#aeea3c] disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label="Отправить"
+                >
+                  {pending ? (
+                    <LoaderCircle className="size-5 animate-spin" />
+                  ) : (
+                    <Send className="size-5" />
+                  )}
+                </button>
+              </form>
             </footer>
           </section>
         </div>

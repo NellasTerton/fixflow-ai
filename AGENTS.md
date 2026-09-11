@@ -41,10 +41,22 @@ Mask demo phone numbers and addresses.
   cron jobs, timers, or delayed follow-ups.
 - Make owns Telegram delivery, delays, and external automation. n8n is not
   used.
-- Do not introduce Supabase or Vercel.
-- Neon PostgreSQL is implemented. The optional LLM layer may only classify,
-  extract structured data, and phrase questions; deterministic server code
-  validates fields and owns all writes.
-- RAG uses demo Markdown/TXT documents, local deterministic 1536-dimensional
-  embeddings, and pgvector retrieval in Neon. Claude may answer only from
-  retrieved chunks. External automations are not implemented yet.
+- Do not introduce Supabase. The app has run on Vercel (not Netlify) since
+  the D-024 migration — a git push to `main` auto-deploys there.
+- Neon PostgreSQL is implemented. The chat is a tool-calling agent
+  (`src/server/chat/agent.ts`, modeled on a working sibling project rather
+  than a hand-rolled state machine, D-032): Claude drives the conversation
+  itself and calls `check_availability`/`create_lead`/`book_slot` when it
+  has what it needs — it never writes to the database directly. Every tool
+  handler (`src/server/chat/tools.ts`) independently validates its
+  arguments (phone format, service-name resolution against the real
+  catalog, atomic slot booking) before writing, so "LLM proposes,
+  deterministic server code decides and owns all writes" still holds; there
+  is just no intermediate FSM translating between a classification and
+  hand-rolled steps anymore.
+- Knowledge (services, prices, FAQ, warranty, service area) is baked
+  directly into the chat's system prompt (`src/server/chat/system-prompt.ts`)
+  from the `documents` table — there is no vector retrieval step. The
+  `document_chunks`/pgvector schema still exists but is unused; it was not
+  migrated away when RAG retrieval was removed (D-032). External
+  automations beyond Make are not implemented yet.
