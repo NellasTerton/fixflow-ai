@@ -50,6 +50,13 @@
       "when": 1785572881169,
       "tag": "0006_violet_miek",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789139940721,
+      "tag": "0007_mysterious_molly_hayes",
+      "breakpoints": true
     }
   ]
 }

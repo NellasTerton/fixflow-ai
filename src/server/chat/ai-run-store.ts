@@ -31,7 +31,6 @@ export async function saveChatAgentRun(input: {
       reply: redactPublicText(input.reply),
       action: input.toolsCalled.at(-1) ?? null,
     },
-    retrievedChunks: [],
     durationMs: input.durationMs,
     status: input.status,
     error: input.error,

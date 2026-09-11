@@ -45,12 +45,6 @@ export interface PublicAiRun {
   question: string | null;
   reply: string | null;
   action: string | null;
-  retrievedChunks: Array<{
-    title: string;
-    source: string;
-    content: string;
-    similarity: number;
-  }>;
   durationMs: number;
   status: "success" | "error";
   error: string | null;

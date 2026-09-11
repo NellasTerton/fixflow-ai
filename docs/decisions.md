@@ -878,3 +878,29 @@ UUID, а если это не UUID — ищет лид по `public_number` (`re
 (`operation: "chat_agent_turn"`) с тем, какие инструменты были вызваны —
 проще, чем было у FSM+RAG (не нужен отдельный `rag_answer`/список чанков),
 но та же цель — прозрачность для внутреннего наблюдателя.
+
+## D-033. Убраны остатки RAG-схемы: document_chunks и retrieved_chunks
+
+D-032 заменил RAG-поиск на знания, вшитые в system prompt, но сознательно
+оставил `document_chunks`/pgvector и колонку `ai_runs.retrieved_chunks` в
+схеме как неиспользуемые — вне рамок того этапа. Владелец решил, что раз
+RAG больше нигде не используется в живом продукте, держать в кодовой базе
+и в проде мёртвую таблицу с embeddings ради пункта в резюме не имеет
+смысла: сама реализация (коммиты, PR) уже осталась в истории git и доступна
+как доказательство работы над RAG без необходимости держать её подключённой
+к боевой базе.
+
+Удалено: таблица `document_chunks` (и колонка `embedding vector(1536)`,
+HNSW-индекс) из `src/server/db/schema.ts`; колонка `ai_runs.retrieved_chunks`
+и весь код, читавший или показывавший её (`toPublicAiExplanation` в
+`server/crm/queries.ts`, поле `retrievedChunks` в `PublicAiRun`
+(`lib/crm/types.ts`), блоки «Найденные chunks»/«Источники» на
+`/workspace/ai-runs` и `/workspace/leads/[id]`, `retrievedChunks: []` в
+`ai-run-store.ts`). Тесты схемы (`schema.test.ts`) обновлены под новый
+список таблиц/constraints. Таблица `documents` (сама база знаний, без
+чанков) не тронута — она по-прежнему единственный источник знаний для
+system prompt (D-032) и для `/workspace/knowledge`.
+
+Расширение `pgvector` в Neon осталось включённым (`CREATE EXTENSION IF NOT
+EXISTS vector` не отменяется) — его наличие безвредно и не мешает ничему,
+откатывать отдельной миграцией не требуется.

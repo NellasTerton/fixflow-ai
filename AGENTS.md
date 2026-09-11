@@ -57,6 +57,7 @@ Mask demo phone numbers and addresses.
 - Knowledge (services, prices, FAQ, warranty, service area) is baked
   directly into the chat's system prompt (`src/server/chat/system-prompt.ts`)
   from the `documents` table — there is no vector retrieval step. The
-  `document_chunks`/pgvector schema still exists but is unused; it was not
-  migrated away when RAG retrieval was removed (D-032). External
-  automations beyond Make are not implemented yet.
+  `document_chunks`/pgvector schema and every reference to retrieved chunks
+  were removed entirely (D-033) once RAG retrieval was confirmed unused
+  after D-032; the `documents` table itself stays as the single knowledge
+  source. External automations beyond Make are not implemented yet.

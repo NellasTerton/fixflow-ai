@@ -1,7 +1,6 @@
 import {
   ArrowLeft,
   Bot,
-  BookOpenText,
   CalendarClock,
   CircleDollarSign,
   Clock3,
@@ -194,24 +193,6 @@ export default async function LeadDetailPage({
                     <p className="mt-3 rounded-lg bg-[#eef4e9] p-3 text-sm leading-6 text-[#263a3f]">
                       {run.reply}
                     </p>
-                  ) : null}
-                  {run.retrievedChunks.length > 0 ? (
-                    <details className="mt-3 rounded-lg border border-[#102328]/8 p-3">
-                      <summary className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-[#477233]">
-                        <BookOpenText className="size-4" aria-hidden="true" />
-                        Источники · {run.retrievedChunks.length}
-                      </summary>
-                      <div className="mt-2 space-y-2">
-                        {run.retrievedChunks.map((chunk, index) => (
-                          <p
-                            key={`${chunk.source}-${index}`}
-                            className="text-xs leading-5 text-[#5f6e72]"
-                          >
-                            {chunk.title} · {(chunk.similarity * 100).toFixed(1)}%
-                          </p>
-                        ))}
-                      </div>
-                    </details>
                   ) : null}
                   <p className="mt-3 text-xs text-[#7a878a]">
                     {run.model} · {run.durationMs} ms ·{" "}

@@ -14,7 +14,6 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
-  vector,
 } from "drizzle-orm/pg-core";
 
 export const serviceCategoryValues = [
@@ -467,43 +466,6 @@ export const documents = pgTable(
   ],
 );
 
-export const documentChunks = pgTable(
-  "document_chunks",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-    documentId: uuid("document_id")
-      .notNull()
-      .references(() => documents.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade",
-      }),
-    category: serviceCategoryEnum("category").notNull(),
-    chunkIndex: integer("chunk_index").notNull(),
-    content: text("content").notNull(),
-    metadata: jsonb("metadata")
-      .$type<Record<string, unknown>>()
-      .default(sql`'{}'::jsonb`)
-      .notNull(),
-    embedding: vector("embedding", { dimensions: 1536 }),
-    createdAt: createdAt(),
-  },
-  (table) => [
-    uniqueIndex("document_chunks_document_index_unique").on(
-      table.documentId,
-      table.chunkIndex,
-    ),
-    index("document_chunks_category_idx").on(table.category),
-    index("document_chunks_embedding_hnsw_idx").using(
-      "hnsw",
-      table.embedding.op("vector_cosine_ops"),
-    ),
-    check(
-      "document_chunks_index_nonnegative",
-      sql`${table.chunkIndex} >= 0`,
-    ),
-  ],
-);
-
 export const aiRuns = pgTable(
   "ai_runs",
   {
@@ -521,10 +483,6 @@ export const aiRuns = pgTable(
     parsedOutput: jsonb("parsed_output")
       .$type<Record<string, unknown>>()
       .default(sql`'{}'::jsonb`)
-      .notNull(),
-    retrievedChunks: jsonb("retrieved_chunks")
-      .$type<unknown[]>()
-      .default(sql`'[]'::jsonb`)
       .notNull(),
     durationMs: integer("duration_ms").notNull(),
     status: aiRunStatusEnum("status").notNull(),
@@ -642,7 +600,6 @@ export const fixFlowTables = [
   conversations,
   messages,
   documents,
-  documentChunks,
   aiRuns,
   integrationEvents,
   automationLogs,

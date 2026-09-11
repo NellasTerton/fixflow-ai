@@ -1,4 +1,4 @@
-import { Bot, BookOpenText, Gauge, Timer } from "lucide-react";
+import { Bot, Gauge, Timer } from "lucide-react";
 
 import {
   DataBadge,
@@ -75,37 +75,6 @@ export default async function AiRunsPage() {
                       {run.reply}
                     </p>
                   </div>
-                ) : null}
-                {run.retrievedChunks.length > 0 ? (
-                  <details className="mt-3 rounded-xl border border-[#102328]/10 p-3">
-                    <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-[#263a3f]">
-                      <BookOpenText className="size-4 text-[#477233]" aria-hidden="true" />
-                      Найденные chunks · {run.retrievedChunks.length}
-                    </summary>
-                    <div className="mt-3 space-y-2">
-                      {run.retrievedChunks.map((chunk, index) => (
-                        <article
-                          key={`${chunk.source}-${index}`}
-                          className="rounded-lg bg-[#f7f8f3] p-3"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <p className="text-xs font-semibold text-[#263a3f]">
-                              {chunk.title}
-                            </p>
-                            <span className="font-mono text-xs text-[#477233]">
-                              {(chunk.similarity * 100).toFixed(1)}%
-                            </span>
-                          </div>
-                          <p className="mt-2 text-xs leading-5 text-[#5f6e72]">
-                            {chunk.content}
-                          </p>
-                          <p className="mt-2 font-mono text-[10px] text-[#829093]">
-                            {chunk.source}
-                          </p>
-                        </article>
-                      ))}
-                    </div>
-                  </details>
                 ) : null}
                 {run.error ? (
                   <p className="mt-2 text-sm text-red-700">{run.error}</p>

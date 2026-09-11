@@ -217,7 +217,6 @@ export async function getPublicLeadDetail(
           model: aiRuns.model,
           inputSummary: aiRuns.inputSummary,
           parsedOutput: aiRuns.parsedOutput,
-          retrievedChunks: aiRuns.retrievedChunks,
           durationMs: aiRuns.durationMs,
           status: aiRuns.status,
           error: aiRuns.error,
@@ -291,11 +290,7 @@ export async function getPublicLeadDetail(
         row.phone,
         row.address,
       ),
-      ...toPublicAiExplanation(
-        run.inputSummary,
-        run.parsedOutput,
-        run.retrievedChunks,
-      ),
+      ...toPublicAiExplanation(run.inputSummary, run.parsedOutput),
       durationMs: run.durationMs,
       status: run.status,
       error: run.error
@@ -366,7 +361,6 @@ export async function listPublicAiRuns(): Promise<PublicAiRun[]> {
       model: aiRuns.model,
       inputSummary: aiRuns.inputSummary,
       parsedOutput: aiRuns.parsedOutput,
-      retrievedChunks: aiRuns.retrievedChunks,
       durationMs: aiRuns.durationMs,
       status: aiRuns.status,
       error: aiRuns.error,
@@ -391,11 +385,7 @@ export async function listPublicAiRuns(): Promise<PublicAiRun[]> {
       run.phone ?? undefined,
       run.address ?? undefined,
     ),
-    ...toPublicAiExplanation(
-      run.inputSummary,
-      run.parsedOutput,
-      run.retrievedChunks,
-    ),
+    ...toPublicAiExplanation(run.inputSummary, run.parsedOutput),
     durationMs: run.durationMs,
     status: run.status,
     error: run.error
@@ -412,11 +402,7 @@ export async function listPublicAiRuns(): Promise<PublicAiRun[]> {
 function toPublicAiExplanation(
   inputSummary: string,
   parsedOutput: Record<string, unknown>,
-  retrievedChunks: unknown[],
-): Pick<
-  PublicAiRun,
-  "question" | "reply" | "action" | "retrievedChunks"
-> {
+): Pick<PublicAiRun, "question" | "reply" | "action"> {
   const question = inputSummary.startsWith("question=")
     ? redactPublicText(inputSummary.slice("question=".length))
     : null;
@@ -435,28 +421,6 @@ function toPublicAiExplanation(
     question,
     reply,
     action,
-    retrievedChunks: retrievedChunks.flatMap((value) => {
-      if (!value || typeof value !== "object") {
-        return [];
-      }
-
-      const chunk = value as Record<string, unknown>;
-      if (
-        typeof chunk.title !== "string" ||
-        typeof chunk.source !== "string" ||
-        typeof chunk.content !== "string" ||
-        typeof chunk.similarity !== "number"
-      ) {
-        return [];
-      }
-
-      return [{
-        title: chunk.title,
-        source: chunk.source,
-        content: redactPublicText(chunk.content),
-        similarity: chunk.similarity,
-      }];
-    }),
   };
 }
 
